@@ -1,0 +1,25 @@
+name: pliparser-dev
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip>=25
+  - setuptools>=80
+  - setuptools_scm>=8
+  - tox>=4
+  - virtualenv>=20.34
+  - pytest
+  - pytest-cov
+  - coverage
+  - sphinx>=1.3
+  - furo
+  - docutils
+  - check-manifest
+  - readme_renderer
+  - pygments
+  - twine
+  - jinja2
+  - uv
+  - pip:
+      - prek
+      - -e .

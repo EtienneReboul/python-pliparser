@@ -4,7 +4,6 @@ Usage
 
 To use the project:
 
-.. code-block:: python
+.. code-block:: bash
 
-    import pliparser
-    pliparser.compute(...)
+    pliparser plip2csv --input report.txt --output some_dir/

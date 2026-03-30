@@ -2,4 +2,4 @@
 Authors
 =======
 
-* Etienne Reboul - https://blog.ionelmc.ro
+* Etienne Reboul - https://github.com/EtienneReboul
