@@ -17,18 +17,33 @@ Why does this file exist, and why not put this in __main__?
 
 import argparse
 
-from .core import compute
+from .core import run_plip2csv
 
-parser = argparse.ArgumentParser(description="Command description.")
-parser.add_argument(
-    "names",
-    metavar="NAME",
-    nargs=argparse.ZERO_OR_MORE,
-    help="A name of something.",
-)
+
+def get_arguments(args=None):
+    """Parse command line arguments and return them as a namespace."""
+    parser = argparse.ArgumentParser(description="Command description.")
+    subparsers = parser.add_subparsers(dest="subcommand", required=True)
+
+    plip2csv_parser = subparsers.add_parser("plip2csv", help="Convert a PLIP report to CSV files.")
+    plip2csv_parser.add_argument(
+        "--input",
+        required=True,
+        help="Path to the input PLIP TXT report.",
+    )
+    plip2csv_parser.add_argument(
+        "--output",
+        required=True,
+        help="Directory where CSV files will be written.",
+    )
+    return parser.parse_args(args=args)
 
 
 def run(args=None):
-    args = parser.parse_args(args=args)
-    print(compute(args.names))
-    parser.exit(0)
+    args = get_arguments(args=args)
+
+    if args.subcommand == "plip2csv":
+        run_plip2csv(args.input, args.output)
+        return
+
+    raise ValueError(f"Unknown subcommand: {args.subcommand}")
