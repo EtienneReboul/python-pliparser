@@ -68,14 +68,19 @@ def iter_plip_interactions(path: Path) -> Iterator[tuple[str, list[str], dict[st
                 interaction_type = line.strip().replace("**", "").strip().replace(" ", "_").lower()
 
                 # Skip the table separator line.
-                next(file)
-
-                header_line = next(file)
+                try:
+                    next(file)
+                    header_line = next(file)
+                except StopIteration:
+                    return
                 header = [column_name.strip().lower() for column_name in header_line.strip().split("|") if column_name]
 
                 # Skip the table separator line.
-                next(file)
-                line = next(file)
+                try:
+                    next(file)
+                    line = next(file)
+                except StopIteration:
+                    return
 
                 while line.strip():
                     values = [value.strip() for value in line.strip().split("|") if value.strip()]
@@ -86,7 +91,10 @@ def iter_plip_interactions(path: Path) -> Iterator[tuple[str, list[str], dict[st
                         row = {header[i]: value for i, value in enumerate(values)}
                         yield interaction_type, header, row
 
-                    line = next(file)
+                    try:
+                        line = next(file)
+                    except StopIteration:
+                        return
 
 
 def plip2dictlist(path: Path) -> defaultdict[str, list[dict[str, str]]]:
