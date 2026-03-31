@@ -12,8 +12,8 @@ Overview
       - |github-actions| |codecov|
     * - package
       - |version| |wheel| |supported-versions| |supported-implementations| |commits-since|
-.. |docs| image:: https://readthedocs.org/projects/python-pliparser/badge/?style=flat
-    :target: https://readthedocs.org/projects/python-pliparser/
+.. |docs| image:: https://img.shields.io/badge/docs-in%20repo-blue
+    :target: https://github.com/EtienneReboul/python-pliparser/tree/main/docs
     :alt: Documentation Status
 .. |github-actions| image:: https://github.com/EtienneReboul/python-pliparser/actions/workflows/github-actions.yml/badge.svg
     :alt: GitHub Actions Build Status
@@ -35,7 +35,7 @@ Overview
     :target: https://pypi.org/project/pliparser
 .. |commits-since| image:: https://img.shields.io/github/commits-since/EtienneReboul/python-pliparser/v0.0.0.svg
     :alt: Commits since latest release
-    :target: https://github.com/EtienneReboul/python-pliparser/compare/v0.0.0...main
+    :target: https://github.com/EtienneReboul/python-pliparser/commits/main
 
 
 Small standalone package with only built-in dependencies for parsing plip report to csv and create command scprit for
@@ -59,7 +59,7 @@ Documentation
 =============
 
 
-https://python-pliparser.readthedocs.io/
+https://github.com/EtienneReboul/python-pliparser/tree/main/docs
 
 
 Development
