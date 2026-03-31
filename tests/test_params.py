@@ -2,44 +2,55 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from pliparser.params import PARAMS
-from pliparser.params import HydrophobicInteractionsParams
-from pliparser.params import InteractionParamsBase
-from pliparser.params import params_dict
-from pliparser.params import to_legacy_params_dict
+from pliparser.params import MARKERS
+from pliparser.params import HalogenMarker
+from pliparser.params import HydrogenAcceptorMarker
+from pliparser.params import HydrogenDonorMarker
+from pliparser.params import HydrophobicMarker
+from pliparser.params import MarkerBase
+from pliparser.params import NegativeIonMarker
+from pliparser.params import PiSystemMarker
+from pliparser.params import PositiveIonMarker
+from pliparser.params import WaterMarker
 
 
-def test_params_registry_contains_expected_keys() -> None:
-    assert sorted(PARAMS.keys()) == [
-        "Halogen_Bond",
-        "Hydrogen_Bonds",
-        "Hydrophobic_Interactions",
-        "Metal_Complex",
-        "Salt_Bridges",
-        "Water_Bridges",
-        "pi-Cation_Interactions",
-        "pi-Stacking_parallel",
-        "pi-Stacking_perpendicular",
+def test_markers_registry_contains_expected_keys() -> None:
+    assert sorted(MARKERS.keys()) == [
+        "halogen",
+        "hydrogen_acceptor",
+        "hydrogen_donor",
+        "hydrophobic",
+        "negative_ion",
+        "pi_system",
+        "positive_ion",
+        "water",
     ]
 
 
-def test_params_instances_derive_from_abstract_base() -> None:
-    assert all(isinstance(value, InteractionParamsBase) for value in PARAMS.values())
+def test_marker_instances_derive_from_abstract_base() -> None:
+    assert all(isinstance(value, MarkerBase) for value in MARKERS.values())
 
 
-def test_legacy_schema_matches_original_contract() -> None:
-    legacy = to_legacy_params_dict()
+def test_marker_defaults_match_visual_schema() -> None:
+    marker_classes = [
+        HydrophobicMarker,
+        HydrogenDonorMarker,
+        HydrogenAcceptorMarker,
+        WaterMarker,
+        PiSystemMarker,
+        PositiveIonMarker,
+        NegativeIonMarker,
+        HalogenMarker,
+    ]
 
-    assert legacy["Hydrogen_Bonds"] == {
-        "RGB": [0, 0, 255],
-        "color": "blue",
-        "Representation": "solid_line",
-    }
-    assert legacy == params_dict
+    for marker_cls in marker_classes:
+        marker = marker_cls()
+        assert marker.radius == 1.0
+        assert marker.color
 
 
 def test_dataclasses_are_frozen() -> None:
-    style = HydrophobicInteractionsParams()
+    style = HydrophobicMarker()
 
     with pytest.raises(FrozenInstanceError):
-        style.color = "white"  # pyright: ignore[reportAttributeAccessIssue] # This is a test to confirm that the dataclass is frozen, so we expect an error when trying to modify an attribute.
+        style.color = "white"  # pyright: ignore[reportAttributeAccessIssue]

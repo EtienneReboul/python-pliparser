@@ -1,161 +1,115 @@
-"""Interaction parameter definitions.
-
-This module exposes typed dataclass models for interaction styling and keeps a
-legacy ``params_dict`` mapping for compatibility with existing consumers.
-"""
+"""Marker definitions for interaction visualization."""
 
 from abc import ABC
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import Optional
 
-RGB = tuple[int, int, int]
+Color = str
 
 
 @dataclass(frozen=True)
-class InteractionParamsBase(ABC):
-    """Base style definition for one PLIP interaction type."""
+class MarkerBase(ABC):
+    """Base marker definition used by visualization layers."""
 
-    rgb: RGB
-    color: str
-    representation: str
+    color: Color
+    radius: float
 
     @classmethod
     @abstractmethod
-    def interaction_type(cls) -> str:
-        """Return the PLIP interaction key used in serialized mappings."""
-
-    def as_legacy_dict(self) -> dict[str, object]:
-        """Return the legacy dict format used by old code paths."""
-
-        return {
-            "RGB": list(self.rgb),
-            "color": self.color,
-            "Representation": self.representation,
-        }
+    def marker_type(cls) -> str:
+        """Return marker key used in registries and serialization."""
 
 
 @dataclass(frozen=True)
-class HydrophobicInteractionsParams(InteractionParamsBase):
-    rgb: RGB = (0, 0, 0)
-    color: str = "black"
-    representation: str = "dashed_line"
+class HydrophobicMarker(MarkerBase):
+    color: Color = "slategray"
+    radius: float = 1.0
 
     @classmethod
-    def interaction_type(cls) -> str:
-        return "Hydrophobic_Interactions"
+    def marker_type(cls) -> str:
+        return "hydrophobic"
 
 
 @dataclass(frozen=True)
-class HydrogenBondsParams(InteractionParamsBase):
-    rgb: RGB = (0, 0, 255)
-    color: str = "blue"
-    representation: str = "solid_line"
+class HydrogenDonorMarker(MarkerBase):
+    color: Color = "dodgerblue"
+    radius: float = 1.0
 
     @classmethod
-    def interaction_type(cls) -> str:
-        return "Hydrogen_Bonds"
+    def marker_type(cls) -> str:
+        return "hydrogen_donor"
 
 
 @dataclass(frozen=True)
-class WaterBridgesParams(InteractionParamsBase):
-    rgb: RGB = (191, 191, 255)
-    color: str = "light blue"
-    representation: str = "solid_line"
+class HydrogenAcceptorMarker(MarkerBase):
+    color: Color = "deepskyblue"
+    radius: float = 1.0
 
     @classmethod
-    def interaction_type(cls) -> str:
-        return "Water_Bridges"
+    def marker_type(cls) -> str:
+        return "hydrogen_acceptor"
 
 
 @dataclass(frozen=True)
-class PiStackingParallelParams(InteractionParamsBase):
-    rgb: RGB = (0, 255, 0)
-    color: str = "green"
-    representation: str = "dashed_line"
+class WaterMarker(MarkerBase):
+    color: Color = "mediumturquoise"
+    radius: float = 1.0
 
     @classmethod
-    def interaction_type(cls) -> str:
-        return "pi-Stacking_parallel"
+    def marker_type(cls) -> str:
+        return "water"
 
 
 @dataclass(frozen=True)
-class PiStackingPerpendicularParams(InteractionParamsBase):
-    rgb: RGB = (60, 32, 240)
-    color: str = "purple"
-    representation: str = "dashed_line"
+class PiSystemMarker(MarkerBase):
+    color: Color = "orchid"
+    radius: float = 1.0
 
     @classmethod
-    def interaction_type(cls) -> str:
-        return "pi-Stacking_perpendicular"
+    def marker_type(cls) -> str:
+        return "pi_system"
 
 
 @dataclass(frozen=True)
-class PiCationInteractionsParams(InteractionParamsBase):
-    rgb: RGB = (255, 128, 0)
-    color: str = "orange"
-    representation: str = "dashed_line"
+class PositiveIonMarker(MarkerBase):
+    color: Color = "orangered"
+    radius: float = 1.0
 
     @classmethod
-    def interaction_type(cls) -> str:
-        return "pi-Cation_Interactions"
+    def marker_type(cls) -> str:
+        return "positive_ion"
 
 
 @dataclass(frozen=True)
-class HalogenBondParams(InteractionParamsBase):
-    rgb: RGB = (54, 255, 191)
-    color: str = "Dark cyan"
-    representation: str = "solid_line"
+class NegativeIonMarker(MarkerBase):
+    color: Color = "royalblue"
+    radius: float = 1.0
 
     @classmethod
-    def interaction_type(cls) -> str:
-        return "Halogen_Bond"
+    def marker_type(cls) -> str:
+        return "negative_ion"
 
 
 @dataclass(frozen=True)
-class SaltBridgesParams(InteractionParamsBase):
-    rgb: RGB = (255, 255, 0)
-    color: str = "yellow"
-    representation: str = "dashed_line"
+class HalogenMarker(MarkerBase):
+    color: Color = "goldenrod"
+    radius: float = 1.0
 
     @classmethod
-    def interaction_type(cls) -> str:
-        return "Salt_Bridges"
+    def marker_type(cls) -> str:
+        return "halogen"
 
 
-@dataclass(frozen=True)
-class MetalComplexParams(InteractionParamsBase):
-    rgb: RGB = (140, 64, 153)
-    color: str = "violetpurple"
-    representation: str = "dashed_line"
-
-    @classmethod
-    def interaction_type(cls) -> str:
-        return "Metal_Complex"
-
-
-PARAMS: dict[str, InteractionParamsBase] = {
-    params.interaction_type(): params
-    for params in [
-        HydrophobicInteractionsParams(),
-        HydrogenBondsParams(),
-        WaterBridgesParams(),
-        PiStackingParallelParams(),
-        PiStackingPerpendicularParams(),
-        PiCationInteractionsParams(),
-        HalogenBondParams(),
-        SaltBridgesParams(),
-        MetalComplexParams(),
+MARKERS: dict[str, MarkerBase] = {
+    marker.marker_type(): marker
+    for marker in [
+        HydrophobicMarker(),
+        HydrogenDonorMarker(),
+        HydrogenAcceptorMarker(),
+        WaterMarker(),
+        PiSystemMarker(),
+        PositiveIonMarker(),
+        NegativeIonMarker(),
+        HalogenMarker(),
     ]
 }
-
-
-def to_legacy_params_dict(params: Optional[dict[str, InteractionParamsBase]] = None) -> dict[str, dict[str, object]]:
-    """Convert typed params to the legacy dict-of-dicts schema."""
-
-    source = PARAMS if params is None else params
-    return {interaction: style.as_legacy_dict() for interaction, style in source.items()}
-
-
-# Backward-compatible export name used by legacy callers.
-params_dict: dict[str, dict[str, object]] = to_legacy_params_dict()
