@@ -1,4 +1,5 @@
 import sys
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
@@ -58,3 +59,11 @@ class TestRun:
         with patch.object(sys, "argv", ["prog", *test_args]):
             with pytest.raises(SystemExit):
                 run()
+
+    @patch("pliparser.cli.get_arguments")
+    def test_run_unknown_subcommand_value_error(self, mock_get_arguments):
+        """Test run raises ValueError when parsed subcommand is unknown."""
+        mock_get_arguments.return_value = SimpleNamespace(subcommand="unknown_subcommand")
+
+        with pytest.raises(ValueError, match="Unknown subcommand: unknown_subcommand"):
+            run()

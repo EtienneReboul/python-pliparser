@@ -93,6 +93,29 @@ def test_iter_plip_interactions_raises_on_invalid_column_count(tmp_path: Path) -
         list(iter_plip_interactions(report))
 
 
+def test_iter_plip_interactions_returns_on_missing_header_line(tmp_path: Path) -> None:
+    truncated_report = "** Hydrogen Bonds **\n+----+\n"
+    report = _write_report(tmp_path / "truncated_header.txt", truncated_report)
+
+    assert list(iter_plip_interactions(report)) == []
+
+
+def test_iter_plip_interactions_returns_on_missing_first_data_line(tmp_path: Path) -> None:
+    truncated_report = "** Hydrogen Bonds **\n+----+\n|RESNR|RESTYPE|\n+----+\n"
+    report = _write_report(tmp_path / "truncated_data_start.txt", truncated_report)
+
+    assert list(iter_plip_interactions(report)) == []
+
+
+def test_iter_plip_interactions_returns_on_eof_after_last_row(tmp_path: Path) -> None:
+    truncated_report = "** Hydrogen Bonds **\n+----+\n|RESNR|RESTYPE|\n+----+\n|10|SER|\n"
+    report = _write_report(tmp_path / "truncated_after_row.txt", truncated_report)
+
+    rows = list(iter_plip_interactions(report))
+    assert len(rows) == 1
+    assert rows[0][2]["resnr"] == "10"
+
+
 def test_plip2dictlist_groups_rows_by_interaction_type(tmp_path: Path) -> None:
     report = _write_report(tmp_path / "report.txt", _sample_report())
 
