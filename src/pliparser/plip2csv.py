@@ -172,7 +172,7 @@ def plip2csv_stream(path: Path, output_dir: Path) -> None:
             if writer is None:
                 output_file = output_dir / f"{interaction_type}.csv"
                 output_handle = stack.enter_context(output_file.open("w", encoding="UTF-8", newline=""))
-                writer = csv.DictWriter(output_handle, fieldnames=header)
+                writer = csv.DictWriter(output_handle, fieldnames=[*header, "interaction_type"])
                 writer.writeheader()
                 interaction_writers[interaction_type] = writer
                 interaction_headers[interaction_type] = header
@@ -182,6 +182,7 @@ def plip2csv_stream(path: Path, output_dir: Path) -> None:
                     f"inconsistent header for {interaction_type}: expected {interaction_headers[interaction_type]}, got {header}"
                 )
 
+            row["interaction_type"] = interaction_type
             writer.writerow(row)
             summary_writer.writerow({field: row.get(field, "") for field in common_fields})
 

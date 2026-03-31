@@ -173,6 +173,9 @@ def test_plip2csv_stream_writes_csv_without_buffering(tmp_path: Path) -> None:
     assert (output_dir / "hydrogen_bonds.csv").exists()
     assert (output_dir / "hydrophobic_interactions.csv").exists()
     assert (output_dir / "halogen_bonds.csv").exists()
+    hydrogen_lines = (output_dir / "hydrogen_bonds.csv").read_text(encoding="UTF-8").splitlines()
+    assert hydrogen_lines[0].endswith(",interaction_type")
+    assert hydrogen_lines[1].endswith(",hydrogen_bonds")
     summary_lines = (output_dir / "summary.csv").read_text(encoding="UTF-8").splitlines()
     assert len(summary_lines) == 14
 
