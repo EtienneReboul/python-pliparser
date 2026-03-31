@@ -2,16 +2,16 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from pliparser.params import MARKERS
-from pliparser.params import HalogenMarker
-from pliparser.params import HydrogenAcceptorMarker
-from pliparser.params import HydrogenDonorMarker
-from pliparser.params import HydrophobicMarker
-from pliparser.params import MarkerBase
-from pliparser.params import NegativeIonMarker
-from pliparser.params import PiSystemMarker
-from pliparser.params import PositiveIonMarker
-from pliparser.params import WaterMarker
+from pliparser.markers import MARKERS
+from pliparser.markers import HalogenMarker
+from pliparser.markers import HydrogenAcceptorMarker
+from pliparser.markers import HydrogenDonorMarker
+from pliparser.markers import HydrophobicMarker
+from pliparser.markers import MarkerBase
+from pliparser.markers import NegativeIonMarker
+from pliparser.markers import PiSystemMarker
+from pliparser.markers import PositiveIonMarker
+from pliparser.markers import WaterMarker
 
 
 def test_markers_registry_contains_expected_keys() -> None:
