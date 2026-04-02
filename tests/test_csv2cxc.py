@@ -194,6 +194,21 @@ def test_create_reveal_command_for_small_molecule() -> None:
     assert cmd.endswith("byhetero\n")
 
 
+def test_create_reveal_command_uses_backbone_when_sidechain_false() -> None:
+    row = {
+        "resnr": "45",
+        "reschain": "A",
+        "resnr_lig": "10",
+        "reschain_lig": "B",
+        "sidechain": "False",
+    }
+    cmd = create_reveal_command(row, model_idces=(1, 2), config={"issmalmol": False})
+
+    assert "color #1/A:45 & backbone byhetero\n" in cmd
+    assert "show #1/B:10 & sidechain\n" in cmd
+    assert "color #1/B:10 & sidechain byhetero\n" in cmd
+
+
 def test_create_interaction_commands_requires_interaction_type() -> None:
     with pytest.raises(ValueError, match="Row must contain 'interaction_type' key"):
         create_interaction_commands({}, marker_counter=0, model_idces=(1, 1), config=_DUMMY_CONFIG)

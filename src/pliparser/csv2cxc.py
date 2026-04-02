@@ -361,14 +361,17 @@ def create_reveal_command(row: dict[str, str], model_idces: tuple[int, int], con
     reschain = row.get("reschain")
     resnr_lig = row.get("resnr_lig")
     reschain_lig = row.get("reschain_lig")
+    receptor_residue_part = "sidechain"
+    if row.get("sidechain", "").strip().lower() == "false":
+        receptor_residue_part = "backbone"
 
     # reveal the residues involved in the interaction
-    cmd = f"show #{model_idces[0]}/{reschain}:{resnr}\n"
+    cmd = f"show #{model_idces[0]}/{reschain}:{resnr} & {receptor_residue_part} target a\n"
     if not config["issmalmol"]:
         cmd += f"show #{model_idces[0]}/{reschain_lig}:{resnr_lig} & sidechain\n"
 
     # color
-    cmd += f"color #{model_idces[0]}/{reschain}:{resnr} & sidechain byhetero\n"
+    cmd += f"color #{model_idces[0]}/{reschain}:{resnr} & {receptor_residue_part} byhetero\n"
     if not config["issmalmol"]:
         cmd += f"color #{model_idces[0]}/{reschain_lig}:{resnr_lig} & sidechain byhetero\n"
 
