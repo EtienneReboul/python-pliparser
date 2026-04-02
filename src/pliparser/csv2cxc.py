@@ -375,7 +375,7 @@ def create_reveal_command(row: dict[str, str], model_idces: tuple[int, int], con
     return cmd
 
 
-def create_interaction_commands(row: dict[str, str], marker_counter: int, model_idces: tuple[int, int]) -> tuple[str, int]:
+def create_interaction_commands(row: dict[str, str], marker_counter: int, model_idces: tuple[int, int], config: dict) -> tuple[str, int]:
     """
     Create a ChimeraX command string for an interaction between two markers.
 
@@ -413,6 +413,9 @@ def create_interaction_commands(row: dict[str, str], marker_counter: int, model_
     """
     # declare local variable
     chimerax_command = create_interaction_comment(row)
+
+    # reveal residues involved in the interaction
+    chimerax_command += create_reveal_command(row, model_idces, config)
 
     # extract interaction type and coordinates from the row
     interaction_type = row.get("interaction_type")
@@ -484,12 +487,12 @@ def create_cxc_header(config_params: dict) -> str:
     header += f"open {config_params['pdb']}\n"
 
     header += f"hide #{config_params['model_id']} target ac\n"
-    header += f"show #1/{config_params['receptor_chain']} target c\n"
-    header += f"transparency #{config_params['receptor_chain']} {config_params['transparency']}\n"
+    header += f"show #{config_params['model_id']}/{config_params['receptor_chain']} target c\n"
+    header += f"transparency #{config_params['model_id']}/{config_params['receptor_chain']} {config_params['transparency']}\n"
     if not config_params["issmalmol"]:
-        header += f"show #1/{config_params['ligand_chain']} target c\n"
+        header += f"show #{config_params['model_id']}/{config_params['ligand_chain']} target c\n"
     else:
-        header += f"show #1/{config_params['ligand_chain']} & ligand target a\n"
+        header += f"show #{config_params['model_id']}/{config_params['ligand_chain']} & ligand target a\n"
 
     # color the receptor and ligand
     header += f"color #{config_params['model_id']}/{config_params['receptor_chain']} {config_params['receptor_color']}\n"
@@ -499,7 +502,7 @@ def create_cxc_header(config_params: dict) -> str:
         header += f"color #{config_params['model_id']} & ligand byhetero\n"
 
     header += 'preset "overall look" "publication 1 (silhouettes)"\n'
-    header += "style sticks\n"
+    header += "style stick\n"
     return header
 
 
@@ -534,7 +537,9 @@ def write_cxc_file(input_csv_folder: Path, output_cxc: Path, parser_config: dict
             with csv_path.open("r", encoding="UTF-8") as csvfile:
                 reader = csv.DictReader(csvfile)
                 for row in reader:
-                    cmd, markercounter = create_interaction_commands(row, marker_counter=markercounter, model_idces=models_idces)
+                    cmd, markercounter = create_interaction_commands(
+                        row, marker_counter=markercounter, model_idces=models_idces, config=parser_config
+                    )
                     file.write(cmd)
                     if isfirst:
                         file.write(f"rename #{models_idces[0]}.{models_idces[1]} {csv_path.stem}\n")

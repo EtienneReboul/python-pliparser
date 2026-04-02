@@ -34,14 +34,14 @@ def test_marker_instances_derive_from_abstract_base() -> None:
 
 def test_marker_defaults_match_visual_schema() -> None:
     expected_radii = {
-        HydrophobicMarker: 1.0,
-        HydrogenDonorMarker: 1.0,
-        HydrogenAcceptorMarker: 1.0,
-        WaterMarker: 1.0,
-        PiSystemMarker: 3.0,
-        PositiveIonMarker: 1.0,
-        NegativeIonMarker: 1.0,
-        HalogenMarker: 1.0,
+        HydrophobicMarker: 0.40,
+        HydrogenDonorMarker: 0.40,
+        HydrogenAcceptorMarker: 0.40,
+        WaterMarker: 0.40,
+        PiSystemMarker: 0.80,
+        PositiveIonMarker: 0.40,
+        NegativeIonMarker: 0.40,
+        HalogenMarker: 0.40,
     }
 
     for marker_cls, expected_radius in expected_radii.items():

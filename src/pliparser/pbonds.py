@@ -110,7 +110,7 @@ class PiCationPb(PseudobondParamsBase):
 @dataclass(frozen=True)
 class HalogenPb(PseudobondParamsBase):
     rgb: RGB = (54, 255, 191)
-    color: str = "Dark cyan"
+    color: str = "dark cyan"
     radius: float = 0.075
     dashes: int = 0
 
@@ -134,7 +134,7 @@ class SaltBridgesPb(PseudobondParamsBase):
 @dataclass(frozen=True)
 class MetalComplexPb(PseudobondParamsBase):
     rgb: RGB = (140, 64, 153)
-    color: str = "violetpurple"
+    color: str = "violet"
     radius: float = 0.075
     dashes: int = 6
 

@@ -41,7 +41,7 @@ def test_halogen_pb_legacy_schema() -> None:
 
     assert style.as_legacy_dict() == {
         "RGB": [54, 255, 191],
-        "color": "Dark cyan",
+        "color": "dark cyan",
         "radius": 0.075,
         "dashes": 0,
     }

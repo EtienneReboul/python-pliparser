@@ -23,7 +23,7 @@ class MarkerBase(ABC):
 @dataclass(frozen=True)
 class HydrophobicMarker(MarkerBase):
     color: Color = "slategray"
-    radius: float = 1.0
+    radius: float = 0.40
 
     @classmethod
     def marker_type(cls) -> str:
@@ -33,7 +33,7 @@ class HydrophobicMarker(MarkerBase):
 @dataclass(frozen=True)
 class HydrogenDonorMarker(MarkerBase):
     color: Color = "dodgerblue"
-    radius: float = 1.0
+    radius: float = 0.40
 
     @classmethod
     def marker_type(cls) -> str:
@@ -43,7 +43,7 @@ class HydrogenDonorMarker(MarkerBase):
 @dataclass(frozen=True)
 class HydrogenAcceptorMarker(MarkerBase):
     color: Color = "deepskyblue"
-    radius: float = 1.0
+    radius: float = 0.40
 
     @classmethod
     def marker_type(cls) -> str:
@@ -53,7 +53,7 @@ class HydrogenAcceptorMarker(MarkerBase):
 @dataclass(frozen=True)
 class WaterMarker(MarkerBase):
     color: Color = "mediumturquoise"
-    radius: float = 1.0
+    radius: float = 0.40
 
     @classmethod
     def marker_type(cls) -> str:
@@ -63,7 +63,7 @@ class WaterMarker(MarkerBase):
 @dataclass(frozen=True)
 class PiSystemMarker(MarkerBase):
     color: Color = "orchid"
-    radius: float = 3.0
+    radius: float = 0.80
 
     @classmethod
     def marker_type(cls) -> str:
@@ -73,7 +73,7 @@ class PiSystemMarker(MarkerBase):
 @dataclass(frozen=True)
 class PositiveIonMarker(MarkerBase):
     color: Color = "orangered"
-    radius: float = 1.0
+    radius: float = 0.40
 
     @classmethod
     def marker_type(cls) -> str:
@@ -83,7 +83,7 @@ class PositiveIonMarker(MarkerBase):
 @dataclass(frozen=True)
 class NegativeIonMarker(MarkerBase):
     color: Color = "royalblue"
-    radius: float = 1.0
+    radius: float = 0.40
 
     @classmethod
     def marker_type(cls) -> str:
@@ -93,7 +93,7 @@ class NegativeIonMarker(MarkerBase):
 @dataclass(frozen=True)
 class HalogenMarker(MarkerBase):
     color: Color = "goldenrod"
-    radius: float = 1.0
+    radius: float = 0.40
 
     @classmethod
     def marker_type(cls) -> str:
@@ -103,7 +103,7 @@ class HalogenMarker(MarkerBase):
 @dataclass(frozen=True)
 class HalogenAcceptorMarker(MarkerBase):
     color: Color = "thistle"
-    radius: float = 1.0
+    radius: float = 0.40
 
     @classmethod
     def marker_type(cls) -> str:
