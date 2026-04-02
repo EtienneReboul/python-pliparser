@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from typing import Optional
 from typing import Union
 
 from pliparser.csv2cxc import write_cxc_file
@@ -41,8 +42,8 @@ def run_plip2csv(input_path: Union[str, Path], output_dir: Union[str, Path]) -> 
 def run_csv2cxc_with_config(
     input_csv_path: Union[str, Path],
     output_cxc_path: Union[str, Path],
-    config: dict | None = None,
-    config_path: Union[str, Path, None] = None,
+    config: Optional[dict] = None,
+    config_path: Optional[Union[str, Path]] = None,
 ) -> None:
     """Convert interaction CSV files to a CXC file using JSON or CLI config.
 
@@ -52,9 +53,9 @@ def run_csv2cxc_with_config(
         Directory containing interaction CSV files.
     output_cxc_path : Union[str, Path]
         Destination CXC file path.
-    config : dict | None
+    config : Optional[dict]
         Parsed config values, typically from CLI flags.
-    config_path : Union[str, Path, None]
+    config_path : Optional[Union[str, Path]]
         Optional JSON config path. When provided, JSON takes precedence and
         ``config`` is ignored.
     """
