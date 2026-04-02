@@ -38,8 +38,37 @@ def run_plip2csv(input_path: Union[str, Path], output_dir: Union[str, Path]) -> 
     plip2csv_stream(Path(input_path), Path(output_dir))
 
 
-def run_csv2cxc(input_csv_path: Union[str, Path], output_cxc_path: Union[str, Path], config_path: Union[str, Path]) -> None:
-    """Convert a CSV file to a CXC file using the streaming implementation."""
+def run_csv2cxc_with_config(
+    input_csv_path: Union[str, Path],
+    output_cxc_path: Union[str, Path],
+    config: dict | None = None,
+    config_path: Union[str, Path, None] = None,
+) -> None:
+    """Convert interaction CSV files to a CXC file using JSON or CLI config.
 
-    config = read_json_config(Path(config_path))
-    write_cxc_file(Path(input_csv_path), Path(output_cxc_path), config)
+    Parameters
+    ----------
+    input_csv_path : Union[str, Path]
+        Directory containing interaction CSV files.
+    output_cxc_path : Union[str, Path]
+        Destination CXC file path.
+    config : dict | None
+        Parsed config values, typically from CLI flags.
+    config_path : Union[str, Path, None]
+        Optional JSON config path. When provided, JSON takes precedence and
+        ``config`` is ignored.
+    """
+    if config_path is not None:
+        resolved_config = read_json_config(Path(config_path))
+    elif config is not None:
+        resolved_config = config
+    else:
+        raise ValueError("Either 'config_path' or 'config' must be provided for csv2cxc")
+
+    write_cxc_file(Path(input_csv_path), Path(output_cxc_path), resolved_config)
+
+
+def run_csv2cxc(input_csv_path: Union[str, Path], output_cxc_path: Union[str, Path], config_path: Union[str, Path]) -> None:
+    """Backward-compatible wrapper for JSON-config csv2cxc execution."""
+
+    run_csv2cxc_with_config(input_csv_path, output_cxc_path, config_path=config_path)
