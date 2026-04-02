@@ -191,7 +191,7 @@ def test_create_reveal_command_for_small_molecule() -> None:
     cmd = create_reveal_command(row, model_idces=(1, 2), config={"issmalmol": True})
 
     assert "show #1/B:10 & sidechain" not in cmd
-    assert cmd.endswith("byhetero ")
+    assert cmd.endswith("byhetero\n")
 
 
 def test_create_interaction_commands_requires_interaction_type() -> None:

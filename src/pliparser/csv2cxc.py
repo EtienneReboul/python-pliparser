@@ -368,7 +368,7 @@ def create_reveal_command(row: dict[str, str], model_idces: tuple[int, int], con
         cmd += f"show #{model_idces[0]}/{reschain_lig}:{resnr_lig} & sidechain\n"
 
     # color
-    cmd += f"color #{model_idces[0]}/{reschain}:{resnr} & sidechain byhetero "
+    cmd += f"color #{model_idces[0]}/{reschain}:{resnr} & sidechain byhetero\n"
     if not config["issmalmol"]:
         cmd += f"color #{model_idces[0]}/{reschain_lig}:{resnr_lig} & sidechain byhetero\n"
 
