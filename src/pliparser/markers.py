@@ -63,7 +63,7 @@ class WaterMarker(MarkerBase):
 @dataclass(frozen=True)
 class PiSystemMarker(MarkerBase):
     color: Color = "orchid"
-    radius: float = 1.0
+    radius: float = 3.0
 
     @classmethod
     def marker_type(cls) -> str:
@@ -100,6 +100,16 @@ class HalogenMarker(MarkerBase):
         return "halogen"
 
 
+@dataclass(frozen=True)
+class HalogenAcceptorMarker(MarkerBase):
+    color: Color = "thistle"
+    radius: float = 1.0
+
+    @classmethod
+    def marker_type(cls) -> str:
+        return "halogen_acceptor"
+
+
 MARKERS: dict[str, MarkerBase] = {
     marker.marker_type(): marker
     for marker in [
@@ -111,5 +121,6 @@ MARKERS: dict[str, MarkerBase] = {
         PositiveIonMarker(),
         NegativeIonMarker(),
         HalogenMarker(),
+        HalogenAcceptorMarker(),
     ]
 }

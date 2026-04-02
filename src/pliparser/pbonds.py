@@ -16,7 +16,8 @@ class PseudobondParamsBase(ABC):
 
     rgb: RGB
     color: str
-    representation: str
+    radius: float
+    dashes: int
 
     @classmethod
     @abstractmethod
@@ -29,7 +30,8 @@ class PseudobondParamsBase(ABC):
         return {
             "RGB": list(self.rgb),
             "color": self.color,
-            "Representation": self.representation,
+            "radius": self.radius,
+            "dashes": self.dashes,
         }
 
 
@@ -37,7 +39,8 @@ class PseudobondParamsBase(ABC):
 class HydrophobicPb(PseudobondParamsBase):
     rgb: RGB = (0, 0, 0)
     color: str = "black"
-    representation: str = "dashed_line"
+    radius: float = 0.075
+    dashes: int = 6
 
     @classmethod
     def Pseudobond_type(cls) -> str:
@@ -48,7 +51,8 @@ class HydrophobicPb(PseudobondParamsBase):
 class HydrogenBondsPb(PseudobondParamsBase):
     rgb: RGB = (0, 0, 255)
     color: str = "blue"
-    representation: str = "solid_line"
+    radius: float = 0.075
+    dashes: int = 0
 
     @classmethod
     def Pseudobond_type(cls) -> str:
@@ -59,7 +63,8 @@ class HydrogenBondsPb(PseudobondParamsBase):
 class WaterBridgesPb(PseudobondParamsBase):
     rgb: RGB = (191, 191, 255)
     color: str = "light blue"
-    representation: str = "solid_line"
+    radius: float = 0.075
+    dashes: int = 0
 
     @classmethod
     def Pseudobond_type(cls) -> str:
@@ -70,7 +75,8 @@ class WaterBridgesPb(PseudobondParamsBase):
 class PiStackingParallelPb(PseudobondParamsBase):
     rgb: RGB = (0, 255, 0)
     color: str = "green"
-    representation: str = "dashed_line"
+    radius: float = 0.075
+    dashes: int = 6
 
     @classmethod
     def Pseudobond_type(cls) -> str:
@@ -81,7 +87,8 @@ class PiStackingParallelPb(PseudobondParamsBase):
 class PiStackingPerpendicularPb(PseudobondParamsBase):
     rgb: RGB = (60, 32, 240)
     color: str = "purple"
-    representation: str = "dashed_line"
+    radius: float = 0.075
+    dashes: int = 6
 
     @classmethod
     def Pseudobond_type(cls) -> str:
@@ -92,7 +99,8 @@ class PiStackingPerpendicularPb(PseudobondParamsBase):
 class PiCationPb(PseudobondParamsBase):
     rgb: RGB = (255, 128, 0)
     color: str = "orange"
-    representation: str = "dashed_line"
+    radius: float = 0.075
+    dashes: int = 6
 
     @classmethod
     def Pseudobond_type(cls) -> str:
@@ -103,7 +111,8 @@ class PiCationPb(PseudobondParamsBase):
 class HalogenPb(PseudobondParamsBase):
     rgb: RGB = (54, 255, 191)
     color: str = "Dark cyan"
-    representation: str = "solid_line"
+    radius: float = 0.075
+    dashes: int = 0
 
     @classmethod
     def Pseudobond_type(cls) -> str:
@@ -114,7 +123,8 @@ class HalogenPb(PseudobondParamsBase):
 class SaltBridgesPb(PseudobondParamsBase):
     rgb: RGB = (255, 255, 0)
     color: str = "yellow"
-    representation: str = "dashed_line"
+    radius: float = 0.075
+    dashes: int = 6
 
     @classmethod
     def Pseudobond_type(cls) -> str:
@@ -125,7 +135,8 @@ class SaltBridgesPb(PseudobondParamsBase):
 class MetalComplexPb(PseudobondParamsBase):
     rgb: RGB = (140, 64, 153)
     color: str = "violetpurple"
-    representation: str = "dashed_line"
+    radius: float = 0.075
+    dashes: int = 6
 
     @classmethod
     def Pseudobond_type(cls) -> str:

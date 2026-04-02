@@ -31,7 +31,8 @@ def test_hydrophobic_pb_defaults() -> None:
 
     assert style.rgb == (0, 0, 0)
     assert style.color == "black"
-    assert style.representation == "dashed_line"
+    assert style.radius == 0.075
+    assert style.dashes == 6
     assert style.Pseudobond_type() == "Hydrophobic_Pseudobonds"
 
 
@@ -41,7 +42,8 @@ def test_halogen_pb_legacy_schema() -> None:
     assert style.as_legacy_dict() == {
         "RGB": [54, 255, 191],
         "color": "Dark cyan",
-        "Representation": "solid_line",
+        "radius": 0.075,
+        "dashes": 0,
     }
 
 

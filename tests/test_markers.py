@@ -17,6 +17,7 @@ from pliparser.markers import WaterMarker
 def test_markers_registry_contains_expected_keys() -> None:
     assert sorted(MARKERS.keys()) == [
         "halogen",
+        "halogen_acceptor",
         "hydrogen_acceptor",
         "hydrogen_donor",
         "hydrophobic",
@@ -32,20 +33,20 @@ def test_marker_instances_derive_from_abstract_base() -> None:
 
 
 def test_marker_defaults_match_visual_schema() -> None:
-    marker_classes = [
-        HydrophobicMarker,
-        HydrogenDonorMarker,
-        HydrogenAcceptorMarker,
-        WaterMarker,
-        PiSystemMarker,
-        PositiveIonMarker,
-        NegativeIonMarker,
-        HalogenMarker,
-    ]
+    expected_radii = {
+        HydrophobicMarker: 1.0,
+        HydrogenDonorMarker: 1.0,
+        HydrogenAcceptorMarker: 1.0,
+        WaterMarker: 1.0,
+        PiSystemMarker: 3.0,
+        PositiveIonMarker: 1.0,
+        NegativeIonMarker: 1.0,
+        HalogenMarker: 1.0,
+    }
 
-    for marker_cls in marker_classes:
+    for marker_cls, expected_radius in expected_radii.items():
         marker = marker_cls()
-        assert marker.radius == 1.0
+        assert marker.radius == expected_radius
         assert marker.color
 
 
