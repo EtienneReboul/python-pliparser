@@ -246,6 +246,37 @@ jobs:
           echo "No CSV files were generated"
           exit 1
         fi
+    - name: convert csv to cxc
+      run: |
+        mkdir -p integration-data/cxc
+        cat > integration-data/cxc/csv2cxc-config.json <<'JSON'
+        {
+          "pdb": "1vsn",
+          "model_id": 1,
+          "receptor_chain": "A",
+          "ligand_chain": "A",
+          "transparency": 65,
+          "issmalmol": true,
+          "receptor_color": "gray",
+          "ligand_color": "green"
+        }
+        JSON
+
+        pliparser csv2cxc \
+          --input integration-data/csv \
+          --output integration-data/cxc/1vsn.cxc \
+          --config integration-data/cxc/csv2cxc-config.json
+    - name: verify cxc output
+      run: |
+        CXC_PATH="integration-data/cxc/1vsn.cxc"
+        if [ ! -s "$CXC_PATH" ]; then
+          echo "CXC file was not generated or is empty: $CXC_PATH"
+          exit 1
+        fi
+        grep -q "# ChimeraX Command File" "$CXC_PATH" || {
+          echo "CXC output does not contain expected header"
+          exit 1
+        }
     - name: upload integration artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -253,3 +284,4 @@ jobs:
         path: |
           integration-data/raw/1vsn
           integration-data/csv
+          integration-data/cxc
