@@ -1,14 +1,10 @@
 name: build
 on: [push, pull_request, workflow_dispatch]
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 jobs:
   test:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
     strategy:
       fail-fast: false
       matrix:
@@ -204,6 +200,8 @@ jobs:
     - uses: codecov/codecov-action@v5
       if: matrix.cover
       env:
+        # codecov-action@v5 transitively pulls in actions/github-script which still
+        # targets Node 20 internally. This silences the warning until codecov releases a fix.
         FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
       with:
         flags: ${{ matrix.name }}
@@ -215,8 +213,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: test
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
     steps:
     - uses: actions/checkout@v6
       with:
