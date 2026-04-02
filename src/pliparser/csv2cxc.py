@@ -5,6 +5,33 @@ from pathlib import Path
 from pliparser.markers import MARKERS
 from pliparser.pbonds import PBONDS
 
+_PBOND_ALIASES = {
+    "hydrophobic_interactions": "Hydrophobic_Pseudobonds",
+    "hydrophobic_interaction": "Hydrophobic_Pseudobonds",
+    "hydrogen_bonds": "Hydrogen_Bonds",
+    "hydrogen_bond": "Hydrogen_Bonds",
+    "water_bridges": "Water_Bridges",
+    "water_bridge": "Water_Bridges",
+    "halogen_bonds": "Halogen_Bond",
+    "halogen_bond": "Halogen_Bond",
+    "salt_bridges": "Salt_Bridges",
+    "salt_bridge": "Salt_Bridges",
+    "metal_complexes": "Metal_Complex",
+    "metal_complex": "Metal_Complex",
+}
+
+
+def _get_pbond_params(interaction_type: str):
+    pbond_params = PBONDS.get(interaction_type)
+    if pbond_params is not None:
+        return pbond_params
+
+    mapped_key = _PBOND_ALIASES.get(interaction_type.lower())
+    if mapped_key is not None:
+        return PBONDS.get(mapped_key)
+
+    return None
+
 
 def _parse_xyz(coords: str, field_name: str) -> tuple[float, float, float]:
     values = [value.strip() for value in coords.split(",")]
@@ -420,7 +447,7 @@ def create_interaction_commands(row: dict[str, str], marker_counter: int, model_
         marker_counter += 1
 
     # create pseudo-bond command between the two markers
-    pbond_params = PBONDS.get(interaction_type)
+    pbond_params = _get_pbond_params(interaction_type)
     if pbond_params is None:
         raise ValueError(f"No PBOND parameters found for interaction type: {interaction_type}")
 

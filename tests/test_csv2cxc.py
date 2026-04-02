@@ -259,7 +259,7 @@ def test_create_interaction_commands_builds_water_bridge(monkeypatch: pytest.Mon
 
 def test_create_interaction_commands_rejects_unknown_pbond_type() -> None:
     row = {
-        "interaction_type": "hydrogen_bond",
+        "interaction_type": "pi_stack",
         "protisdon": "True",
         "ligcoo": "0.0,0.0,0.0",
         "protcoo": "3.0,0.0,0.0",
@@ -273,6 +273,25 @@ def test_create_interaction_commands_rejects_unknown_pbond_type() -> None:
 
     with pytest.raises(ValueError, match="No PBOND parameters found"):
         create_interaction_commands(row, marker_counter=0, model_idces=(1, 1))
+
+
+def test_create_interaction_commands_accepts_plural_interaction_type_from_csv() -> None:
+    row = {
+        "interaction_type": "halogen_bonds",
+        "ligcoo": "-1.0,2.0,3.0",
+        "protcoo": "0.0,1.0,4.0",
+        "resnr": "67",
+        "restype": "TYR",
+        "reschain": "A",
+        "resnr_lig": "283",
+        "restype_lig": "NFT",
+        "reschain_lig": "A",
+    }
+
+    cmd, marker_counter = create_interaction_commands(row, marker_counter=0, model_idces=(1, 1))
+
+    assert marker_counter == 2
+    assert "name halogen_bonds" in cmd
 
 
 @pytest.mark.parametrize("issmalmol", [False, True])
