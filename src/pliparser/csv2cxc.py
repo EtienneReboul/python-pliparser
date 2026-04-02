@@ -496,7 +496,7 @@ def create_cxc_header(config_params: dict) -> str:
 
     header += f"hide #{config_params['model_id']} target ac\n"
     header += f"show #{config_params['model_id']}/{config_params['receptor_chain']} target c\n"
-    header += f"transparency #{config_params['model_id']}/{config_params['receptor_chain']} {config_params['transparency']}\n"
+    header += f"transparency #{config_params['model_id']}/{config_params['receptor_chain']} {config_params['transparency']} target c \n"
     if not config_params["issmalmol"]:
         header += f"show #{config_params['model_id']}/{config_params['ligand_chain']} target c\n"
     else:
