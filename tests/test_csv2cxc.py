@@ -176,7 +176,7 @@ def test_create_reveal_command_for_macromolecule() -> None:
     }
     cmd = create_reveal_command(row, model_idces=(1, 2), config={"issmalmol": False})
 
-    assert "show #1/A:45\n" in cmd
+    assert "show #1/A:45 & sidechain target a\n" in cmd
     assert "show #1/B:10 & sidechain\n" in cmd
     assert "color #1/B:10 & sidechain byhetero\n" in cmd
 
