@@ -366,7 +366,12 @@ def create_reveal_command(row: dict[str, str], model_idces: tuple[int, int], con
         receptor_residue_part = "backbone"
 
     # reveal the residues involved in the interaction
-    cmd = f"show #{model_idces[0]}/{reschain}:{resnr} & {receptor_residue_part} target a\n"
+    cmd = ""
+    if receptor_residue_part == "backbone":
+        # Backbone atoms are hidden by the cartoon representation unless it is disabled.
+        cmd += f"hide #{model_idces[0]}/{reschain}:{resnr} target c\n"
+
+    cmd += f"show #{model_idces[0]}/{reschain}:{resnr} & {receptor_residue_part} target a\n"
     if not config["issmalmol"]:
         cmd += f"show #{model_idces[0]}/{reschain_lig}:{resnr_lig} & sidechain\n"
 

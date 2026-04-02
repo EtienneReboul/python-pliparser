@@ -176,6 +176,7 @@ def test_create_reveal_command_for_macromolecule() -> None:
     }
     cmd = create_reveal_command(row, model_idces=(1, 2), config={"issmalmol": False})
 
+    assert "hide #1/A:45 target c\n" not in cmd
     assert "show #1/A:45 & sidechain target a\n" in cmd
     assert "show #1/B:10 & sidechain\n" in cmd
     assert "color #1/B:10 & sidechain byhetero\n" in cmd
@@ -204,6 +205,7 @@ def test_create_reveal_command_uses_backbone_when_sidechain_false() -> None:
     }
     cmd = create_reveal_command(row, model_idces=(1, 2), config={"issmalmol": False})
 
+    assert "hide #1/A:45 target c\n" in cmd
     assert "color #1/A:45 & backbone byhetero\n" in cmd
     assert "show #1/B:10 & sidechain\n" in cmd
     assert "color #1/B:10 & sidechain byhetero\n" in cmd
