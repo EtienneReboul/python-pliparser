@@ -1,5 +1,24 @@
 name: build
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    paths:
+      - src/**
+      - tests/**
+      - ci/**
+      - .github/workflows/**
+      - pyproject.toml
+      - tox.ini
+      - pytest.ini
+  pull_request:
+    paths:
+      - src/**
+      - tests/**
+      - ci/**
+      - .github/workflows/**
+      - pyproject.toml
+      - tox.ini
+      - pytest.ini
+  workflow_dispatch:
 jobs:
   test:
     name: ${{ matrix.name }}
@@ -209,7 +228,7 @@ jobs:
         verbose: true
 
   integration:
-    name: integration (real plip data)
+    name: integration (real plip data 9kbz)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: test
@@ -224,68 +243,116 @@ jobs:
       run: |
         python -m pip install --progress-bar=off -U pip
         python -m pip install --progress-bar=off .
-    - name: generate real PLIP report with docker
+    - name: "generate PLIP report (use case 1: receptor A, ligand B)"
       run: |
-        mkdir -p integration-data/raw/1vsn
+        mkdir -p integration-data/raw/9kbz-a-b
         docker run --rm \
-          -v "${GITHUB_WORKSPACE}/integration-data/raw/1vsn:/results" \
+          -v "${GITHUB_WORKSPACE}/integration-data/raw/9kbz-a-b:/results" \
           -w /results \
           --user "$(id -u):$(id -g)" \
-          pharmai/plip:latest -i 1vsn -t
-    - name: convert PLIP report to csv
+          pharmai/plip:latest -i 9kbz -t --chains "[['A'], ['B']]"
+    - name: convert PLIP report to csv (use case 1)
       run: |
-        mkdir -p integration-data/csv
-        REPORT_PATH="$(find integration-data/raw/1vsn -type f -name '*.txt' | head -n 1)"
+        mkdir -p integration-data/csv/9kbz-a-b
+        REPORT_PATH="$(find integration-data/raw/9kbz-a-b -type f -name '*.txt' | head -n 1)"
         if [ -z "$REPORT_PATH" ]; then
-          echo "No .txt PLIP report found in integration-data/raw/1vsn"
-          find integration-data/raw/1vsn -maxdepth 3 -type f || true
+          echo "No .txt PLIP report found in integration-data/raw/9kbz-a-b"
+          find integration-data/raw/9kbz-a-b -maxdepth 3 -type f || true
           exit 1
         fi
-        pliparser plip2csv --input "$REPORT_PATH" --output integration-data/csv
-    - name: verify csv output
+        pliparser plip2csv --input "$REPORT_PATH" --output integration-data/csv/9kbz-a-b
+    - name: verify csv output (use case 1)
       run: |
-        CSV_COUNT="$(find integration-data/csv -type f -name '*.csv' | wc -l | tr -d ' ')"
+        CSV_COUNT="$(find integration-data/csv/9kbz-a-b -type f -name '*.csv' | wc -l | tr -d ' ')"
         echo "Generated CSV files: $CSV_COUNT"
         if [ "$CSV_COUNT" -eq 0 ]; then
           echo "No CSV files were generated"
           exit 1
         fi
-    - name: convert csv to cxc
+    - name: "convert csv to cxc (use case 1: receptor A, ligand B)"
       run: |
         mkdir -p integration-data/cxc
-        cat > integration-data/cxc/csv2cxc-config.json <<'JSON'
+        cat > integration-data/cxc/csv2cxc-config-a-b.json <<'JSON'
         {
-          "pdb": "1vsn",
+          "pdb": "9kbz",
           "model_id": 1,
           "receptor_chain": "A",
-          "ligand_chain": "A",
+          "ligand_chain": "B",
           "transparency": 65,
-          "issmalmol": true,
+          "issmalmol": false,
           "receptor_color": "gray",
           "ligand_color": "green"
         }
         JSON
 
         pliparser csv2cxc \
-          --input integration-data/csv \
-          --output integration-data/cxc/1vsn.cxc \
-          --config integration-data/cxc/csv2cxc-config.json
-    - name: verify cxc output
+          --input integration-data/csv/9kbz-a-b \
+          --output integration-data/cxc/9kbz-a-b.cxc \
+          --config integration-data/cxc/csv2cxc-config-a-b.json
+
+    - name: "generate PLIP report (use case 2: nucleic-acid receptor)"
       run: |
-        CXC_PATH="integration-data/cxc/1vsn.cxc"
-        if [ ! -s "$CXC_PATH" ]; then
-          echo "CXC file was not generated or is empty: $CXC_PATH"
+        mkdir -p integration-data/raw/9kbz-cd-b
+        docker run --rm \
+          -v "${GITHUB_WORKSPACE}/integration-data/raw/9kbz-cd-b:/results" \
+          -w /results \
+          --user "$(id -u):$(id -g)" \
+          pharmai/plip:latest -i 9kbz -t --dnareceptor --chains "[['C','D'], ['B']]"
+    - name: convert PLIP report to csv (use case 2)
+      run: |
+        mkdir -p integration-data/csv/9kbz-cd-b
+        REPORT_PATH="$(find integration-data/raw/9kbz-cd-b -type f -name '*.txt' | head -n 1)"
+        if [ -z "$REPORT_PATH" ]; then
+          echo "No .txt PLIP report found in integration-data/raw/9kbz-cd-b"
+          find integration-data/raw/9kbz-cd-b -maxdepth 3 -type f || true
           exit 1
         fi
-        grep -q "# ChimeraX Command File" "$CXC_PATH" || {
-          echo "CXC output does not contain expected header"
+        pliparser plip2csv --input "$REPORT_PATH" --output integration-data/csv/9kbz-cd-b
+    - name: verify csv output (use case 2)
+      run: |
+        CSV_COUNT="$(find integration-data/csv/9kbz-cd-b -type f -name '*.csv' | wc -l | tr -d ' ')"
+        echo "Generated CSV files: $CSV_COUNT"
+        if [ "$CSV_COUNT" -eq 0 ]; then
+          echo "No CSV files were generated"
           exit 1
+        fi
+    - name: "convert csv to cxc (use case 2: RNA receptor chains C,D)"
+      run: |
+        cat > integration-data/cxc/csv2cxc-config-cd.json <<'JSON'
+        {
+          "pdb": "9kbz",
+          "model_id": 1,
+          "receptor_chain": "C,D",
+          "ligand_chain": "B",
+          "transparency": 65,
+          "issmalmol": false,
+          "receptor_color": "gray",
+          "ligand_color": "green"
         }
+        JSON
+
+        pliparser csv2cxc \
+          --input integration-data/csv/9kbz-cd-b \
+          --output integration-data/cxc/9kbz-cd-b.cxc \
+          --config integration-data/cxc/csv2cxc-config-cd.json
+    - name: verify cxc outputs
+      run: |
+        for CXC_PATH in integration-data/cxc/9kbz-a-b.cxc integration-data/cxc/9kbz-cd-b.cxc; do
+          if [ ! -s "$CXC_PATH" ]; then
+            echo "CXC file was not generated or is empty: $CXC_PATH"
+            exit 1
+          fi
+          grep -q "# ChimeraX Command File" "$CXC_PATH" || {
+            echo "CXC output does not contain expected header: $CXC_PATH"
+            exit 1
+          }
+        done
     - name: upload integration artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: integration-1vsn-data
+        name: integration-9kbz-data
         path: |
-          integration-data/raw/1vsn
+          integration-data/raw/9kbz-a-b
+          integration-data/raw/9kbz-cd-b
           integration-data/csv
           integration-data/cxc
