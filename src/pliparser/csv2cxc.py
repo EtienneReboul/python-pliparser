@@ -493,6 +493,7 @@ def create_cxc_header(config_params: dict) -> str:
 
     # open
     header += f"open {config_params['pdb']}\n"
+    header += f"close #{config_params['model_id']}.1-100\n"  # in case there is some sub models in the pdb, clear all 100 first models to avoid confusion with markers models
 
     header += f"hide #{config_params['model_id']} target ac\n"
     header += f"show #{config_params['model_id']}/{config_params['receptor_chain']} target c\n"
