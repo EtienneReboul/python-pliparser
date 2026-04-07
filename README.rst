@@ -21,18 +21,18 @@ Overview
 .. |codecov| image:: https://codecov.io/gh/EtienneReboul/python-pliparser/branch/main/graphs/badge.svg?branch=main
     :alt: Coverage Status
     :target: https://app.codecov.io/github/EtienneReboul/python-pliparser
-.. |version| image:: https://img.shields.io/pypi/v/pliparser.svg
+.. |version| image:: https://img.shields.io/pypi/v/python-pliparser.svg
     :alt: PyPI Package latest release
-    :target: https://pypi.org/project/pliparser
-.. |wheel| image:: https://img.shields.io/pypi/wheel/pliparser.svg
+    :target: https://pypi.org/project/python-pliparser
+.. |wheel| image:: https://img.shields.io/pypi/wheel/python-pliparser.svg
     :alt: PyPI Wheel
-    :target: https://pypi.org/project/pliparser
-.. |supported-versions| image:: https://img.shields.io/pypi/pyversions/pliparser.svg
+    :target: https://pypi.org/project/python-pliparser
+.. |supported-versions| image:: https://img.shields.io/pypi/pyversions/python-pliparser.svg
     :alt: Supported versions
-    :target: https://pypi.org/project/pliparser
-.. |supported-implementations| image:: https://img.shields.io/pypi/implementation/pliparser.svg
+    :target: https://pypi.org/project/python-pliparser
+.. |supported-implementations| image:: https://img.shields.io/pypi/implementation/python-pliparser.svg
     :alt: Supported implementations
-    :target: https://pypi.org/project/pliparser
+    :target: https://pypi.org/project/python-pliparser
 .. |commits-since| image:: https://img.shields.io/github/commits-since/EtienneReboul/python-pliparser/v0.0.0.svg
     :alt: Commits since latest release
     :target: https://github.com/EtienneReboul/python-pliparser/commits/main
@@ -48,7 +48,7 @@ Installation
 
 ::
 
-    pip install pliparser
+    pip install python-pliparser
 
 You can also install the in-development version with::
 
