@@ -33,7 +33,7 @@ Overview
 .. |supported-implementations| image:: https://img.shields.io/pypi/implementation/python-pliparser.svg
     :alt: Supported implementations
     :target: https://pypi.org/project/python-pliparser
-.. |commits-since| image:: https://img.shields.io/github/commits-since/EtienneReboul/python-pliparser/v0.0.0.svg
+.. |commits-since| image:: https://img.shields.io/github/commits-since/EtienneReboul/python-pliparser/0.1.0.svg
     :alt: Commits since latest release
     :target: https://github.com/EtienneReboul/python-pliparser/commits/main
 
