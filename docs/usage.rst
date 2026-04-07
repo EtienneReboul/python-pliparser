@@ -79,3 +79,66 @@ Notes
 - ``--config`` is optional for ``csv2cxc``.
 - If ``--config`` is not provided, all explicit visualization options are required.
 - Generated ``.cxc`` files can be opened directly in ChimeraX.
+
+CI End-to-End Example (as in GitHub Actions)
+=============================================
+
+The integration job in ``.github/workflows/github-actions.yml`` validates the full pipeline:
+
+1. Generate a real PLIP report with Docker.
+2. Convert the report to CSV.
+3. Convert CSV to CXC.
+4. Validate that output files exist and are non-empty.
+
+Step 1: Generate the PLIP report with Docker
+---------------------------------------------
+
+.. code-block:: bash
+
+    mkdir -p integration-data/raw/1vsn
+    docker run --rm \
+      -v "${PWD}/integration-data/raw/1vsn:/results" \
+      -w /results \
+      --user "$(id -u):$(id -g)" \
+      pharmai/plip:latest -i 1vsn -t
+
+Step 2: Convert PLIP report to CSV
+----------------------------------
+
+.. code-block:: bash
+
+    mkdir -p integration-data/csv
+    REPORT_PATH="$(find integration-data/raw/1vsn -type f -name '*.txt' | head -n 1)"
+    pliparser plip2csv --input "$REPORT_PATH" --output integration-data/csv
+
+Step 3: Convert CSV to CXC
+--------------------------
+
+.. code-block:: bash
+
+    mkdir -p integration-data/cxc
+    cat > integration-data/cxc/csv2cxc-config.json <<'JSON'
+    {
+      "pdb": "1vsn",
+      "model_id": 1,
+      "receptor_chain": "A",
+      "ligand_chain": "A",
+      "transparency": 65,
+      "issmalmol": true,
+      "receptor_color": "gray",
+      "ligand_color": "green"
+    }
+    JSON
+
+    pliparser csv2cxc \
+      --input integration-data/csv \
+      --output integration-data/cxc/1vsn.cxc \
+      --config integration-data/cxc/csv2cxc-config.json
+
+Step 4: Quick output checks
+---------------------------
+
+.. code-block:: bash
+
+    find integration-data/csv -type f -name '*.csv'
+    test -s integration-data/cxc/1vsn.cxc

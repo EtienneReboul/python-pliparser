@@ -12,9 +12,9 @@ Overview
       - |github-actions| |codecov|
     * - package
       - |version| |wheel| |supported-versions| |supported-implementations| |commits-since|
-.. |docs| image:: https://img.shields.io/badge/docs-in%20repo-blue
+.. |docs| image:: https://readthedocs.org/projects/python-pliparser/badge/?version=latest
     :target: https://python-pliparser.readthedocs.io/en/latest/index.html
-    :alt: Documentation Status
+    :alt: Read the Docs Status
 .. |github-actions| image:: https://github.com/EtienneReboul/python-pliparser/actions/workflows/github-actions.yml/badge.svg
     :alt: GitHub Actions Build Status
     :target: https://github.com/EtienneReboul/python-pliparser/actions
