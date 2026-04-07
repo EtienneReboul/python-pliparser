@@ -13,7 +13,7 @@ Overview
     * - package
       - |version| |wheel| |supported-versions| |supported-implementations| |commits-since|
 .. |docs| image:: https://img.shields.io/badge/docs-in%20repo-blue
-    :target: https://github.com/EtienneReboul/python-pliparser/tree/main/docs
+    :target: https://python-pliparser.readthedocs.io/en/latest/index.html
     :alt: Documentation Status
 .. |github-actions| image:: https://github.com/EtienneReboul/python-pliparser/actions/workflows/github-actions.yml/badge.svg
     :alt: GitHub Actions Build Status
@@ -59,7 +59,7 @@ Documentation
 =============
 
 
-https://github.com/EtienneReboul/python-pliparser/tree/main/docs
+https://python-pliparser.readthedocs.io/en/latest/index.html
 
 
 Development
