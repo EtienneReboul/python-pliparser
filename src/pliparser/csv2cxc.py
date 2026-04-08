@@ -22,6 +22,7 @@ _PBOND_ALIASES = {
     "metal_complex": "Metal_Complex",
     "pi-stacking_parallel": "pi-Stacking_parallel",
     "pi-stacking_perpendicular": "pi-Stacking_perpendicular",
+    "pi-cation_interactions": "pi-Cation_Pseudobonds",
 }
 
 
@@ -202,7 +203,7 @@ def get_marker_type_from_row(row: dict[str, str], entity_type: str) -> str:  # p
     elif "pi-stacking" in interaction_type:
         return "pi_system"
 
-    elif "pi_cation" in interaction_type:
+    elif "pi-cation" in interaction_type:
         if entity_type == "receptor" and row["protcharged"] == "True":
             return "positive_ion"
         elif entity_type == "receptor" and row["protcharged"] == "False":
