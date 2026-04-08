@@ -297,7 +297,7 @@ jobs:
           -v "${GITHUB_WORKSPACE}/integration-data/raw/9kbz-cd-b:/results" \
           -w /results \
           --user "$(id -u):$(id -g)" \
-          pharmai/plip:latest -i 9kbz -t --dnareceptor
+          pharmai/plip:latest -i 9kbz -t --dnareceptor --chains "[['C','D'], ['A','B']]"
     - name: convert PLIP report to csv (use case 2)
       run: |
         mkdir -p integration-data/csv/9kbz-cd-b
