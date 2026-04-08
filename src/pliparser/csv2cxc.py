@@ -230,6 +230,14 @@ def get_marker_type_from_row(row: dict[str, str], entity_type: str) -> str:  # p
         else:
             return "halogen_acceptor"
 
+    # For metal complexes, map ligand metal to the metal center marker
+    # and receptor partner to the metal-binding marker.
+    elif "metal_complexes" in interaction_type:
+        if entity_type == "ligand":
+            return "metal_complex"
+        else:
+            return "metal_binding"
+
 
 def create_marker(marker_type: str, model_id: str, coords: tuple[float, float, float]) -> str:
     """
@@ -433,6 +441,8 @@ def create_interaction_commands(row: dict[str, str], marker_counter: int, model_
     # create ligand marker
     coords: str = row.get("ligcoo", "")
     if not coords:
+        coords = row.get("metalcoo", "")
+    if not coords:
         raise ValueError("Row must contain 'ligcoo' key with coordinates")
     coords_tuple = coords.split(",")
     coords_tuple = (float(coords_tuple[0]), float(coords_tuple[1]), float(coords_tuple[2]))
@@ -442,6 +452,8 @@ def create_interaction_commands(row: dict[str, str], marker_counter: int, model_
 
     # create receptor marker
     coords = row.get("protcoo", "")
+    if not coords:
+        coords = row.get("targetcoo", "")
     if not coords:
         raise ValueError("Row must contain 'protcoo' key with coordinates")
     coords_tuple = coords.split(",")

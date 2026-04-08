@@ -8,6 +8,8 @@ from pliparser.markers import HydrogenAcceptorMarker
 from pliparser.markers import HydrogenDonorMarker
 from pliparser.markers import HydrophobicMarker
 from pliparser.markers import MarkerBase
+from pliparser.markers import MetalBindingMarker
+from pliparser.markers import MetalMarker
 from pliparser.markers import NegativeIonMarker
 from pliparser.markers import PiSystemMarker
 from pliparser.markers import PositiveIonMarker
@@ -21,6 +23,8 @@ def test_markers_registry_contains_expected_keys() -> None:
         "hydrogen_acceptor",
         "hydrogen_donor",
         "hydrophobic",
+        "metal_binding",
+        "metal_complex",
         "negative_ion",
         "pi_system",
         "positive_ion",
@@ -42,6 +46,8 @@ def test_marker_defaults_match_visual_schema() -> None:
         PositiveIonMarker: 0.40,
         NegativeIonMarker: 0.40,
         HalogenMarker: 0.40,
+        MetalMarker: 0.40,
+        MetalBindingMarker: 0.40,
     }
 
     for marker_cls, expected_radius in expected_radii.items():

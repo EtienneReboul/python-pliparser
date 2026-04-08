@@ -110,6 +110,26 @@ class HalogenAcceptorMarker(MarkerBase):
         return "halogen_acceptor"
 
 
+@dataclass(frozen=True)
+class MetalMarker(MarkerBase):
+    color: Color = "lightsteelblue"
+    radius: float = 0.40
+
+    @classmethod
+    def marker_type(cls) -> str:
+        return "metal_complex"
+
+
+@dataclass(frozen=True)
+class MetalBindingMarker(MarkerBase):
+    color: Color = "steelblue"
+    radius: float = 0.40
+
+    @classmethod
+    def marker_type(cls) -> str:
+        return "metal_binding"
+
+
 MARKERS: dict[str, MarkerBase] = {
     marker.marker_type(): marker
     for marker in [
@@ -122,5 +142,7 @@ MARKERS: dict[str, MarkerBase] = {
         NegativeIonMarker(),
         HalogenMarker(),
         HalogenAcceptorMarker(),
+        MetalMarker(),
+        MetalBindingMarker(),
     ]
 }

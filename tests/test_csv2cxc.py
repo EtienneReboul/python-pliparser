@@ -126,6 +126,8 @@ def test_parse_xyz_rejects_invalid_count() -> None:
         ({"interaction_type": "salt_bridge", "protispos": "False"}, "ligand", "positive_ion"),
         ({"interaction_type": "halogen_bond"}, "ligand", "halogen"),
         ({"interaction_type": "halogen_bond"}, "receptor", "halogen_acceptor"),
+        ({"interaction_type": "metal_complexes"}, "ligand", "metal_complex"),
+        ({"interaction_type": "metal_complexes"}, "receptor", "metal_binding"),
     ],
 )
 def test_get_marker_type_from_row_mappings(row: dict[str, str], entity_type: str, expected: str) -> None:
@@ -311,6 +313,29 @@ def test_create_interaction_commands_accepts_plural_interaction_type_from_csv() 
 
     assert marker_counter == 2
     assert "name halogen_bonds" in cmd
+
+
+def test_create_interaction_commands_uses_metal_coordination_coordinate_fallbacks() -> None:
+    row = {
+        "interaction_type": "metal_complexes",
+        "metalcoo": "10.0,20.0,30.0",
+        "targetcoo": "40.0,50.0,60.0",
+        "resnr": "67",
+        "restype": "HIS",
+        "reschain": "A",
+        "resnr_lig": "283",
+        "restype_lig": "ZN",
+        "reschain_lig": "B",
+    }
+
+    cmd, marker_counter = create_interaction_commands(row, marker_counter=0, model_idces=(1, 1), config=_DUMMY_CONFIG)
+
+    assert marker_counter == 2
+    assert "marker #1.1 position 10.0,20.0,30.0" in cmd
+    assert "marker #1.1 position 40.0,50.0,60.0" in cmd
+    assert "color lightsteelblue" in cmd
+    assert "color steelblue" in cmd
+    assert "name metal_complexes" in cmd
 
 
 @pytest.mark.parametrize("issmalmol", [False, True])
