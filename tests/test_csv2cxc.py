@@ -117,7 +117,7 @@ def test_parse_xyz_rejects_invalid_count() -> None:
         ({"interaction_type": "hydrogen_bond", "protisdon": "True"}, "ligand", "hydrogen_acceptor"),
         ({"interaction_type": "hydrogen_bond", "protisdon": "False"}, "ligand", "hydrogen_donor"),
         ({"interaction_type": "hydrophobic_interaction"}, "ligand", "hydrophobic"),
-        ({"interaction_type": "pi_stack"}, "receptor", "pi_system"),
+        ({"interaction_type": "pi-stacking"}, "receptor", "pi_system"),
         ({"interaction_type": "pi_cation", "protcharged": "True"}, "receptor", "positive_ion"),
         ({"interaction_type": "pi_cation", "protcharged": "False"}, "ligand", "positive_ion"),
         ({"interaction_type": "water_bridge", "protisdon": "True"}, "water", "water"),
@@ -278,10 +278,17 @@ def test_create_interaction_commands_builds_water_bridge(monkeypatch: pytest.Mon
     assert cmd.count("name water_bridge") == 2
 
 
-def test_create_interaction_commands_rejects_unknown_pbond_type() -> None:
+@pytest.mark.parametrize(
+    ("stacking_type", "expected_color"),
+    [
+        ("P", "green"),
+        ("T", "purple"),
+    ],
+)
+def test_create_interaction_commands_handles_pi_stacking_annotations(stacking_type: str, expected_color: str) -> None:
     row = {
-        "interaction_type": "pi_stack",
-        "protisdon": "True",
+        "interaction_type": "pi-stacking",
+        "type": stacking_type,
         "ligcoo": "0.0,0.0,0.0",
         "protcoo": "3.0,0.0,0.0",
         "resnr": "1",
@@ -292,8 +299,11 @@ def test_create_interaction_commands_rejects_unknown_pbond_type() -> None:
         "reschain_lig": "B",
     }
 
-    with pytest.raises(ValueError, match="No PBOND parameters found"):
-        create_interaction_commands(row, marker_counter=0, model_idces=(1, 1), config=_DUMMY_CONFIG)
+    cmd, marker_counter = create_interaction_commands(row, marker_counter=0, model_idces=(1, 1), config=_DUMMY_CONFIG)
+
+    assert marker_counter == 2
+    assert "name pi-stacking" in cmd
+    assert f"color {expected_color}" in cmd
 
 
 def test_create_interaction_commands_accepts_plural_interaction_type_from_csv() -> None:

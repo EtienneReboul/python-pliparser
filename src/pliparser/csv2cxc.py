@@ -1,9 +1,11 @@
 import csv
 import math
 from pathlib import Path
+from typing import Union
 
 from pliparser.markers import MARKERS
 from pliparser.pbonds import PBONDS
+from pliparser.pbonds import PseudobondParamsBase
 
 _PBOND_ALIASES = {
     "hydrophobic_interactions": "Hydrophobic_Pseudobonds",
@@ -18,10 +20,21 @@ _PBOND_ALIASES = {
     "salt_bridge": "Salt_Bridges",
     "metal_complexes": "Metal_Complex",
     "metal_complex": "Metal_Complex",
+    "pi-stacking_parallel": "pi-Stacking_parallel",
+    "pi-stacking_perpendicular": "pi-Stacking_perpendicular",
 }
 
 
-def _get_pbond_params(interaction_type: str):
+def _get_pbond_params(interaction_type: str, type: Union[str, None] = None) -> Union[PseudobondParamsBase, None]:
+    # type must be taken into account for pi-stacking interactions to determine the correct parallel vs perpendicular style
+    if type is not None:
+        if "pi-stacking" in interaction_type:
+            if type == "P":
+                return PBONDS.get("pi-Stacking_parallel")
+            elif type == "T":
+                return PBONDS.get("pi-Stacking_perpendicular")
+            else:
+                raise ValueError(f"Unknown pi-stacking type: {type}")
     pbond_params = PBONDS.get(interaction_type)
     if pbond_params is not None:
         return pbond_params
@@ -186,7 +199,7 @@ def get_marker_type_from_row(row: dict[str, str], entity_type: str) -> str:  # p
         return "hydrophobic"
 
     # For pi-stacking interactions, we can directly map to the pi_system marker type
-    elif "pi_stack" in interaction_type:
+    elif "pi-stacking" in interaction_type:
         return "pi_system"
 
     elif "pi_cation" in interaction_type:
@@ -237,6 +250,8 @@ def get_marker_type_from_row(row: dict[str, str], entity_type: str) -> str:  # p
             return "metal_complex"
         else:
             return "metal_binding"
+    else:
+        raise ValueError(f"Unknown interaction type: {interaction_type}")
 
 
 def create_marker(marker_type: str, model_id: str, coords: tuple[float, float, float]) -> str:
@@ -470,7 +485,10 @@ def create_interaction_commands(row: dict[str, str], marker_counter: int, model_
         marker_counter += 1
 
     # create pseudo-bond command between the two markers
-    pbond_params = _get_pbond_params(interaction_type)
+    if interaction_type == "pi-stacking":
+        pbond_params = _get_pbond_params(interaction_type, row.get("type"))
+    else:
+        pbond_params = _get_pbond_params(interaction_type)
     if pbond_params is None:
         raise ValueError(f"No PBOND parameters found for interaction type: {interaction_type}")
 
@@ -505,7 +523,7 @@ def create_cxc_header(config_params: dict) -> str:
 
     # open
     header += f"open {config_params['pdb']}\n"
-    header += f"close #{config_params['model_id']}.1-100\n"  # in case there is some sub models in the pdb, clear all 100 first models to avoid confusion with markers models
+    header += f"close #{config_params['model_id']}.1-100\n"  # in case there is some sub models in the pdb, clear all 100 first models to avoid collision with markers models
 
     header += f"hide #{config_params['model_id']} target ac\n"
     header += f"show #{config_params['model_id']}/{config_params['receptor_chain']} target c\n"
