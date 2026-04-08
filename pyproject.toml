@@ -12,7 +12,7 @@ dynamic = [
     "readme",
 ]
 name = "python-pliparser"
-version = "0.1.1"
+version = "0.1.2"
 license = "BSD-2-Clause"
 license-files = ["LICENSE"]
 description = "Small standalone package with only built-in dependencies for parsing plip report to csv and create command scprit for ChimeraX"

@@ -2,6 +2,14 @@
 Changelog
 =========
 
+0.1.2 (2026-04-08)
+------------------
+
+* Expanded metal-binding handling and interaction rendering in the CSV-to-CXC conversion workflow.
+* Improved pi-stacking processing and pseudobond styling selection using PLIP stacking type hints.
+* Added backward-compatible typing annotations for Python 3.9 compatibility in pi-stacking pseudobond parameter selection.
+* Updated unit tests to cover pi-stacking annotation behavior and related mapping paths.
+
 0.1.1 (2026-04-07)
 ------------------
 
