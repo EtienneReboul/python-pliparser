@@ -323,11 +323,11 @@ jobs:
           "pdb": "9kbz",
           "model_id": 1,
           "receptor_chain": "C,D",
-          "ligand_chain": "B",
+          "ligand_chain": "A,B",
           "transparency": 65,
           "issmalmol": false,
           "receptor_color": "gray",
-          "ligand_color": "green"
+          "ligand_color": "cornflowerblue"
         }
         JSON
 
