@@ -231,7 +231,7 @@ def test_create_interaction_commands_requires_protein_coordinates() -> None:
 
 
 def test_create_interaction_commands_builds_non_water_bridge(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setitem(csv2cxc.PBONDS, "hydrogen_bond", PBONDS["Hydrogen_Bonds"])
+    monkeypatch.setitem(csv2cxc.PBONDS, "hydrogen_bonds", PBONDS["hydrogen_bonds"])
     row = {
         "interaction_type": "hydrogen_bond",
         "protisdon": "True",
@@ -254,7 +254,7 @@ def test_create_interaction_commands_builds_non_water_bridge(monkeypatch: pytest
 
 
 def test_create_interaction_commands_builds_water_bridge(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setitem(csv2cxc.PBONDS, "water_bridge", PBONDS["Water_Bridges"])
+    monkeypatch.setitem(csv2cxc.PBONDS, "water_bridges", PBONDS["water_bridges"])
     row = {
         "interaction_type": "water_bridge",
         "protisdon": "True",

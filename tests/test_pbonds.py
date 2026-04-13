@@ -10,15 +10,15 @@ from pliparser.pbonds import PseudobondParamsBase
 
 def test_pbonds_registry_contains_expected_keys() -> None:
     assert sorted(PBONDS.keys()) == [
-        "Halogen_Bond",
-        "Hydrogen_Bonds",
-        "Hydrophobic_Pseudobonds",
-        "Metal_Complex",
-        "Salt_Bridges",
-        "Water_Bridges",
-        "pi-Cation_Pseudobonds",
-        "pi-Stacking_parallel",
-        "pi-Stacking_perpendicular",
+        "halogen_bonds",
+        "hydrogen_bonds",
+        "hydrophobic_interactions",
+        "metal_complexes",
+        "pi-cation_interactions",
+        "pi-stacking_parallel",
+        "pi-stacking_perpendicular",
+        "salt_bridges",
+        "water_bridges",
     ]
 
 
@@ -33,7 +33,7 @@ def test_hydrophobic_pb_defaults() -> None:
     assert style.color == "black"
     assert style.radius == 0.075
     assert style.dashes == 6
-    assert style.Pseudobond_type() == "Hydrophobic_Pseudobonds"
+    assert style.Pseudobond_type() == "hydrophobic_interactions"
 
 
 def test_halogen_pb_legacy_schema() -> None:

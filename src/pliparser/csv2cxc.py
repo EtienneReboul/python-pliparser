@@ -7,42 +7,36 @@ from pliparser.markers import MARKERS
 from pliparser.pbonds import PBONDS
 from pliparser.pbonds import PseudobondParamsBase
 
-_PBOND_ALIASES = {
-    "hydrophobic_interactions": "Hydrophobic_Pseudobonds",
-    "hydrophobic_interaction": "Hydrophobic_Pseudobonds",
-    "hydrogen_bonds": "Hydrogen_Bonds",
-    "hydrogen_bond": "Hydrogen_Bonds",
-    "water_bridges": "Water_Bridges",
-    "water_bridge": "Water_Bridges",
-    "halogen_bonds": "Halogen_Bond",
-    "halogen_bond": "Halogen_Bond",
-    "salt_bridges": "Salt_Bridges",
-    "salt_bridge": "Salt_Bridges",
-    "metal_complexes": "Metal_Complex",
-    "metal_complex": "Metal_Complex",
-    "pi-stacking_parallel": "pi-Stacking_parallel",
-    "pi-stacking_perpendicular": "pi-Stacking_perpendicular",
-    "pi-cation_interactions": "pi-Cation_Pseudobonds",
-}
-
 
 def _get_pbond_params(interaction_type: str, type: Union[str, None] = None) -> Union[PseudobondParamsBase, None]:
     # type must be taken into account for pi-stacking interactions to determine the correct parallel vs perpendicular style
     if type is not None:
         if "pi-stacking" in interaction_type:
             if type == "P":
-                return PBONDS.get("pi-Stacking_parallel")
+                return PBONDS.get("pi-stacking_parallel")
             elif type == "T":
-                return PBONDS.get("pi-Stacking_perpendicular")
+                return PBONDS.get("pi-stacking_perpendicular")
             else:
                 raise ValueError(f"Unknown pi-stacking type: {type}")
     pbond_params = PBONDS.get(interaction_type)
     if pbond_params is not None:
         return pbond_params
 
-    mapped_key = _PBOND_ALIASES.get(interaction_type.lower())
-    if mapped_key is not None:
-        return PBONDS.get(mapped_key)
+    normalized_type = interaction_type.lower()
+    suffix_replacements = {
+        "_interaction": "_interactions",
+        "_bond": "_bonds",
+        "_bridge": "_bridges",
+        "_complex": "_complexes",
+    }
+    for suffix, replacement in suffix_replacements.items():
+        if normalized_type.endswith(suffix):
+            normalized_type = normalized_type[: -len(suffix)] + replacement
+            break
+
+    pbond_params = PBONDS.get(normalized_type)
+    if pbond_params is not None:
+        return pbond_params
 
     return None
 

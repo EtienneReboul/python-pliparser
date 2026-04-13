@@ -44,7 +44,7 @@ class HydrophobicPb(PseudobondParamsBase):
 
     @classmethod
     def Pseudobond_type(cls) -> str:
-        return "Hydrophobic_Pseudobonds"
+        return "hydrophobic_interactions"
 
 
 @dataclass(frozen=True)
@@ -56,7 +56,7 @@ class HydrogenBondsPb(PseudobondParamsBase):
 
     @classmethod
     def Pseudobond_type(cls) -> str:
-        return "Hydrogen_Bonds"
+        return "hydrogen_bonds"
 
 
 @dataclass(frozen=True)
@@ -68,7 +68,7 @@ class WaterBridgesPb(PseudobondParamsBase):
 
     @classmethod
     def Pseudobond_type(cls) -> str:
-        return "Water_Bridges"
+        return "water_bridges"
 
 
 @dataclass(frozen=True)
@@ -80,7 +80,7 @@ class PiStackingParallelPb(PseudobondParamsBase):
 
     @classmethod
     def Pseudobond_type(cls) -> str:
-        return "pi-Stacking_parallel"
+        return "pi-stacking_parallel"
 
 
 @dataclass(frozen=True)
@@ -92,7 +92,7 @@ class PiStackingPerpendicularPb(PseudobondParamsBase):
 
     @classmethod
     def Pseudobond_type(cls) -> str:
-        return "pi-Stacking_perpendicular"
+        return "pi-stacking_perpendicular"
 
 
 @dataclass(frozen=True)
@@ -104,7 +104,7 @@ class PiCationPb(PseudobondParamsBase):
 
     @classmethod
     def Pseudobond_type(cls) -> str:
-        return "pi-Cation_Pseudobonds"
+        return "pi-cation_interactions"
 
 
 @dataclass(frozen=True)
@@ -116,7 +116,7 @@ class HalogenPb(PseudobondParamsBase):
 
     @classmethod
     def Pseudobond_type(cls) -> str:
-        return "Halogen_Bond"
+        return "halogen_bonds"
 
 
 @dataclass(frozen=True)
@@ -128,7 +128,7 @@ class SaltBridgesPb(PseudobondParamsBase):
 
     @classmethod
     def Pseudobond_type(cls) -> str:
-        return "Salt_Bridges"
+        return "salt_bridges"
 
 
 @dataclass(frozen=True)
@@ -140,7 +140,7 @@ class MetalComplexPb(PseudobondParamsBase):
 
     @classmethod
     def Pseudobond_type(cls) -> str:
-        return "Metal_Complex"
+        return "metal_complexes"
 
 
 PBONDS: dict[str, PseudobondParamsBase] = {
