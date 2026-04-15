@@ -2,6 +2,12 @@
 Changelog
 =========
 
+0.1.3 (2026-04-15)
+------------------
+
+* Fix pi-cation interaction handling in the CSV-to-CXC conversion workflow, ensuring correct annotation and pseudobond styling.
+* Simplify pseudobond management logic by updating pbond dataclasses.
+
 0.1.2 (2026-04-08)
 ------------------
 
