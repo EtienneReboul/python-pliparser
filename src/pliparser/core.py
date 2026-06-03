@@ -44,6 +44,7 @@ def run_csv2cxc_with_config(
     output_cxc_path: Union[str, Path],
     config: Optional[dict] = None,
     config_path: Optional[Union[str, Path]] = None,
+    interaction_types: Optional[set[str]] = None,
 ) -> None:
     """Convert interaction CSV files to a CXC file using JSON or CLI config.
 
@@ -66,10 +67,15 @@ def run_csv2cxc_with_config(
     else:
         raise ValueError("Either 'config_path' or 'config' must be provided for csv2cxc")
 
-    write_cxc_file(Path(input_csv_path), Path(output_cxc_path), resolved_config)
+    write_cxc_file(Path(input_csv_path), Path(output_cxc_path), resolved_config, interaction_types=interaction_types)
 
 
-def run_csv2cxc(input_csv_path: Union[str, Path], output_cxc_path: Union[str, Path], config_path: Union[str, Path]) -> None:
+def run_csv2cxc(
+    input_csv_path: Union[str, Path],
+    output_cxc_path: Union[str, Path],
+    config_path: Union[str, Path],
+    interaction_types: Optional[set[str]] = None,
+) -> None:
     """Backward-compatible wrapper for JSON-config csv2cxc execution."""
 
-    run_csv2cxc_with_config(input_csv_path, output_cxc_path, config_path=config_path)
+    run_csv2cxc_with_config(input_csv_path, output_cxc_path, config_path=config_path, interaction_types=interaction_types)

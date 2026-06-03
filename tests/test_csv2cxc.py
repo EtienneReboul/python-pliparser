@@ -406,6 +406,60 @@ def test_write_cxc_file_writes_header_and_commands(tmp_path: Path, monkeypatch: 
     assert "rename #1.1 hydrogen_bonds\n" in content
 
 
+def test_write_cxc_file_filters_interaction_types(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    csv_path = tmp_path / "interactions.csv"
+    csv_path.write_text(
+        "interaction_type,ligcoo,protcoo,protisdon\n"
+        "hydrogen_bond,0.0,0.0,0.0,1.0,0.0,0.0,True\n"
+        "hydrophobic_interaction,0.0,0.0,0.0,1.0,0.0,0.0,\n",
+        encoding="UTF-8",
+    )
+
+    seen_types: list[str] = []
+
+    def fake_create_header(_: dict) -> str:
+        return "# HEADER\n"
+
+    def fake_create_commands(row: dict[str, str], marker_counter: int, model_idces: tuple[int, int], config: dict) -> tuple[str, int]:
+        seen_types.append(row["interaction_type"])
+        return f"CMD:{row['interaction_type']}\n", marker_counter + 1
+
+    monkeypatch.setattr(csv2cxc, "create_cxc_header", fake_create_header)
+    monkeypatch.setattr(csv2cxc, "create_interaction_commands", fake_create_commands)
+
+    out = tmp_path / "out.cxc"
+    write_cxc_file(tmp_path, out, parser_config={"model_id": 1}, interaction_types={"hydrogen_bond"})
+
+    assert seen_types == ["hydrogen_bond"]
+    content = out.read_text(encoding="UTF-8")
+    assert "CMD:hydrogen_bond" in content
+    assert "CMD:hydrophobic_interaction" not in content
+
+
+def test_write_cxc_file_with_none_filter_passes_all_rows(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    csv_path = tmp_path / "interactions.csv"
+    csv_path.write_text(
+        "interaction_type,ligcoo,protcoo,protisdon\n"
+        "hydrogen_bond,0.0,0.0,0.0,1.0,0.0,0.0,True\n"
+        "hydrophobic_interaction,0.0,0.0,0.0,1.0,0.0,0.0,\n",
+        encoding="UTF-8",
+    )
+
+    seen_types: list[str] = []
+
+    monkeypatch.setattr(csv2cxc, "create_cxc_header", lambda _: "# HEADER\n")
+    monkeypatch.setattr(
+        csv2cxc,
+        "create_interaction_commands",
+        lambda row, marker_counter, model_idces, config: seen_types.append(row["interaction_type"]) or ("CMD\n", marker_counter + 1),
+    )
+
+    out = tmp_path / "out.cxc"
+    write_cxc_file(tmp_path, out, parser_config={"model_id": 1}, interaction_types=None)
+
+    assert seen_types == ["hydrogen_bond", "hydrophobic_interaction"]
+
+
 def test_write_cxc_file_skips_summary_only(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     (tmp_path / "summary.csv").write_text("ignored\n", encoding="UTF-8")
     monkeypatch.setattr(csv2cxc, "create_cxc_header", lambda _cfg: "# HEADER\n")

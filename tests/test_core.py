@@ -99,6 +99,18 @@ def test_run_csv2cxc_with_config_path_takes_precedence(mock_write_cxc_file, mock
     assert call_args[0][2] == {"model_id": 1, "source": "json"}
 
 
+@patch("pliparser.core.write_cxc_file")
+def test_run_csv2cxc_with_config_forwards_interaction_types(mock_write_cxc_file):
+    cfg = {"model_id": 1}
+    interaction_types = {"pi-stacking", "salt_bridge"}
+
+    run_csv2cxc_with_config("csv_dir", "out.cxc", config=cfg, interaction_types=interaction_types)
+
+    mock_write_cxc_file.assert_called_once()
+    _, kwargs = mock_write_cxc_file.call_args
+    assert kwargs["interaction_types"] == interaction_types
+
+
 @patch("pliparser.core.plip2csv_stream")
 def test_run_plip2csv_converts_to_path_objects(mock_plip2csv_stream):
     run_plip2csv("input.txt", "output_dir")

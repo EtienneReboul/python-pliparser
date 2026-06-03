@@ -540,7 +540,12 @@ def create_cxc_header(config_params: dict) -> str:
     return header
 
 
-def write_cxc_file(input_csv_folder: Path, output_cxc: Path, parser_config: dict) -> None:
+def write_cxc_file(
+    input_csv_folder: Path,
+    output_cxc: Path,
+    parser_config: dict,
+    interaction_types: Union[set[str], None] = None,
+) -> None:
     """
     Write a list of ChimeraX command strings to a .cxc file.
 
@@ -571,6 +576,8 @@ def write_cxc_file(input_csv_folder: Path, output_cxc: Path, parser_config: dict
             with csv_path.open("r", encoding="UTF-8") as csvfile:
                 reader = csv.DictReader(csvfile)
                 for row in reader:
+                    if interaction_types is not None and not any(t in row.get("interaction_type", "") for t in interaction_types):
+                        continue
                     cmd, markercounter = create_interaction_commands(
                         row, marker_counter=markercounter, model_idces=models_idces, config=parser_config
                     )

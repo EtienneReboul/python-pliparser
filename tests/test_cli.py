@@ -108,7 +108,9 @@ class TestRun:
         test_args = ["csv2cxc", "--input", "csv_dir", "--output", "out.cxc", "--config", "cfg.json"]
         with patch.object(sys, "argv", ["prog", *test_args]):
             run()
-            mock_run_csv2cxc_with_config.assert_called_once_with("csv_dir", "out.cxc", config=None, config_path="cfg.json")
+            mock_run_csv2cxc_with_config.assert_called_once_with(
+                "csv_dir", "out.cxc", config=None, config_path="cfg.json", interaction_types=None
+            )
 
     @patch("pliparser.cli.run_csv2cxc_with_config")
     def test_run_csv2cxc_subcommand_with_explicit_flags(self, mock_run_csv2cxc_with_config):
@@ -151,6 +153,26 @@ class TestRun:
                 "receptor_color": "gray",
                 "ligand_color": "green",
             }
+
+    @patch("pliparser.cli.run_csv2cxc_with_config")
+    def test_run_csv2cxc_with_interaction_types_filter(self, mock_run_csv2cxc_with_config):
+        """Test that --interaction-types is parsed and forwarded as a set."""
+        test_args = [
+            "csv2cxc",
+            "--input",
+            "csv_dir",
+            "--output",
+            "out.cxc",
+            "--config",
+            "cfg.json",
+            "--interaction-types",
+            "pi-stacking",
+            "salt_bridge",
+        ]
+        with patch.object(sys, "argv", ["prog", *test_args]):
+            run()
+            _, kwargs = mock_run_csv2cxc_with_config.call_args
+            assert kwargs["interaction_types"] == {"pi-stacking", "salt_bridge"}
 
     def test_run_unknown_subcommand(self):
         """Test run function with unknown subcommand raises ValueError."""

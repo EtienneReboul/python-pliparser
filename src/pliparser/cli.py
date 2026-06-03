@@ -57,6 +57,13 @@ def get_arguments(args=None):
         default=None,
         help="Whether ligand is treated as a small molecule.",
     )
+    csv2cxc_parser.add_argument(
+        "--interaction-types",
+        nargs="+",
+        default=None,
+        metavar="TYPE",
+        help="Subset of interaction types to include (e.g. pi-stacking salt_bridge). Omit to include all.",
+    )
 
     parsed_args = parser.parse_args(args=args)
 
@@ -101,7 +108,8 @@ def run(args=None):
                 "ligand_color": args.ligand_color,
             }
 
-        run_csv2cxc_with_config(args.input, args.output, config=config, config_path=args.config)
+        interaction_types = set(args.interaction_types) if args.interaction_types else None
+        run_csv2cxc_with_config(args.input, args.output, config=config, config_path=args.config, interaction_types=interaction_types)
         return
 
     raise ValueError(f"Unknown subcommand: {args.subcommand}")

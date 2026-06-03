@@ -339,9 +339,16 @@ jobs:
           --input integration-data/csv/9kbz-cd-b \
           --output integration-data/cxc/9kbz-cd-b.cxc \
           --config integration-data/cxc/csv2cxc-config-cd.json
+    - name: "convert csv to cxc with interaction filter (use case 1: chain A, no hydrophobic/hydrogen bonds)"
+      run: |
+        pliparser csv2cxc \
+          --input integration-data/csv/9kbz-a-b \
+          --output integration-data/cxc/9kbz-a-b-filtered.cxc \
+          --config integration-data/cxc/csv2cxc-config-a-b.json \
+          --interaction-types pi-stacking pi-cation water_bridge salt_bridge halogen_bond metal_complexes
     - name: verify cxc outputs
       run: |
-        for CXC_PATH in integration-data/cxc/9kbz-a-b.cxc integration-data/cxc/9kbz-cd-b.cxc; do
+        for CXC_PATH in integration-data/cxc/9kbz-a-b.cxc integration-data/cxc/9kbz-cd-b.cxc integration-data/cxc/9kbz-a-b-filtered.cxc; do
           if [ ! -s "$CXC_PATH" ]; then
             echo "CXC file was not generated or is empty: $CXC_PATH"
             exit 1
@@ -351,6 +358,11 @@ jobs:
             exit 1
           }
         done
+        if grep -qE "name (hydrophobic_interactions|hydrogen_bonds)" integration-data/cxc/9kbz-a-b-filtered.cxc; then
+          echo "Filtered CXC must not contain hydrophobic or hydrogen bond interactions"
+          exit 1
+        fi
+        echo "Filter verified: no hydrophobic or hydrogen bond interactions in filtered output"
     - name: upload integration artifacts
       uses: actions/upload-artifact@v4
       with:
