@@ -73,11 +73,48 @@ You can also pass all required visualization options directly on the command lin
             --receptor-color gray \
             --ligand-color green
 
+Example 4: Filtering interaction types
+======================================
+
+Use ``--interaction-types`` to restrict the output to a subset of interaction types.
+This is particularly useful for intra- or inter-chain analyses where hydrophobic
+interactions and hydrogen bonds would clutter the visualisation.
+
+Pass the types you want to **include** as a space-separated list. Matching is
+substring-based, so ``halogen_bond`` matches both ``halogen_bond`` and
+``halogen_bonds``.
+
+.. code-block:: bash
+
+        pliparser csv2cxc \
+            --input out/csv/ \
+            --output out/cxc/complex-filtered.cxc \
+            --config cxc-config.json \
+            --interaction-types pi-stacking pi-cation water_bridge salt_bridge halogen_bond metal_complexes
+
+The flag is compatible with both ``--config`` and the explicit option form:
+
+.. code-block:: bash
+
+        pliparser csv2cxc \
+            --input out/csv/ \
+            --output out/cxc/complex-filtered.cxc \
+            --pdb 1vsn \
+            --model-id 1 \
+            --receptor-chain A \
+            --ligand-chain A \
+            --transparency 65 \
+            --issmalmol \
+            --receptor-color gray \
+            --ligand-color green \
+            --interaction-types pi-stacking salt_bridge
+
 Notes
 =====
 
 - ``--config`` is optional for ``csv2cxc``.
 - If ``--config`` is not provided, all explicit visualization options are required.
+- ``--interaction-types`` is optional. When omitted, all interaction types are included.
 - Generated ``.cxc`` files can be opened directly in ChimeraX.
 
 CI End-to-End Example (as in GitHub Actions)
