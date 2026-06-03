@@ -9,6 +9,8 @@ on:
       - pyproject.toml
       - tox.ini
       - pytest.ini
+      - .pre-commit-config.yaml
+      - .taplo.toml
   pull_request:
     paths:
       - src/**
@@ -18,6 +20,8 @@ on:
       - pyproject.toml
       - tox.ini
       - pytest.ini
+      - .pre-commit-config.yaml
+      - .taplo.toml
   workflow_dispatch:
 jobs:
   test:
