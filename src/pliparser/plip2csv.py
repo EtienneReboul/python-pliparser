@@ -40,6 +40,7 @@ class CommonFields:
         "dist",
         "ligcoo",
         "protcoo",
+        "interaction_type",
     )
 
 
