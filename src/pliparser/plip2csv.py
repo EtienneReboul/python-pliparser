@@ -228,13 +228,13 @@ def write2csv(plip_dict: defaultdict[str, list[dict[str, str]]], output_dir: Pat
         for interaction_type, interactions in plip_dict.items():
             if interactions:
                 # get header from keys of first interaction dictionary
-                header = interactions[0].keys()
+                header = list(interactions[0].keys())
                 output_file = output_dir / f"{interaction_type}.csv"
 
                 with output_file.open("w", encoding="UTF-8", newline="") as csvfile:
-                    writer = csv.DictWriter(csvfile, fieldnames=header)
+                    writer = csv.DictWriter(csvfile, fieldnames=[*header, "interaction_type"])
                     writer.writeheader()
-                    writer.writerows(interactions)
-                    # write summary data
                     for interaction in interactions:
+                        interaction["interaction_type"] = interaction_type
+                        writer.writerow(interaction)
                         summary_writer.writerow({field: interaction.get(field, "") for field in common_fields})

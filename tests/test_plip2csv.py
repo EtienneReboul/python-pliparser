@@ -149,18 +149,19 @@ def test_write2csv_creates_interaction_and_summary_files(tmp_path: Path) -> None
     halogen_lines = halogen_file.read_text(encoding="UTF-8").splitlines()
     summary_lines = summary_file.read_text(encoding="UTF-8").splitlines()
     assert (
-        hydrophobic_lines[0] == "resnr,restype,reschain,resnr_lig,restype_lig,reschain_lig,dist,ligcarbonidx,protcarbonidx,ligcoo,protcoo"
+        hydrophobic_lines[0]
+        == "resnr,restype,reschain,resnr_lig,restype_lig,reschain_lig,dist,ligcarbonidx,protcarbonidx,ligcoo,protcoo,interaction_type"
     )
     assert hydrogen_lines[0] == (
         "resnr,restype,reschain,resnr_lig,restype_lig,reschain_lig,sidechain,dist_h-a,dist_d-a,don_angle,"
-        "protisdon,donoridx,donortype,acceptoridx,acceptortype,ligcoo,protcoo"
+        "protisdon,donoridx,donortype,acceptoridx,acceptortype,ligcoo,protcoo,interaction_type"
     )
     assert halogen_lines[0] == (
         "resnr,restype,reschain,resnr_lig,restype_lig,reschain_lig,sidechain,dist,don_angle,acc_angle,"
-        "don_idx,donortype,acc_idx,acceptortype,ligcoo,protcoo"
+        "don_idx,donortype,acc_idx,acceptortype,ligcoo,protcoo,interaction_type"
     )
     assert len(hydrogen_lines) == 8
-    assert summary_lines[0] == "resnr,restype,reschain,resnr_lig,restype_lig,reschain_lig,dist,ligcoo,protcoo"
+    assert summary_lines[0] == "resnr,restype,reschain,resnr_lig,restype_lig,reschain_lig,dist,ligcoo,protcoo,interaction_type"
     assert len(summary_lines) == 14
 
 
