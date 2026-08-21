@@ -231,148 +231,6 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
         verbose: true
 
-  integration:
-    name: integration (real plip data 9kbz)
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    needs: test
-    steps:
-    - uses: actions/checkout@v6
-      with:
-        fetch-depth: 0
-    - uses: actions/setup-python@v6
-      with:
-        python-version: '3.13'
-    - name: install package
-      run: |
-        python -m pip install --progress-bar=off -U pip
-        python -m pip install --progress-bar=off .
-    - name: "generate PLIP report (use case 1: receptor A, ligand B)"
-      run: |
-        mkdir -p integration-data/raw/9kbz-a-b
-        docker run --rm \
-          -v "${GITHUB_WORKSPACE}/integration-data/raw/9kbz-a-b:/results" \
-          -w /results \
-          --user "$(id -u):$(id -g)" \
-          pharmai/plip:latest -i 9kbz -t --chains "[['A'], ['B']]"
-    - name: convert PLIP report to csv (use case 1)
-      run: |
-        mkdir -p integration-data/csv/9kbz-a-b
-        REPORT_PATH="$(find integration-data/raw/9kbz-a-b -type f -name '*.txt' | head -n 1)"
-        if [ -z "$REPORT_PATH" ]; then
-          echo "No .txt PLIP report found in integration-data/raw/9kbz-a-b"
-          find integration-data/raw/9kbz-a-b -maxdepth 3 -type f || true
-          exit 1
-        fi
-        pliparser plip2csv --input "$REPORT_PATH" --output integration-data/csv/9kbz-a-b
-    - name: verify csv output (use case 1)
-      run: |
-        CSV_COUNT="$(find integration-data/csv/9kbz-a-b -type f -name '*.csv' | wc -l | tr -d ' ')"
-        echo "Generated CSV files: $CSV_COUNT"
-        if [ "$CSV_COUNT" -eq 0 ]; then
-          echo "No CSV files were generated"
-          exit 1
-        fi
-    - name: "convert csv to cxc (use case 1: receptor A, ligand B)"
-      run: |
-        mkdir -p integration-data/cxc
-        cat > integration-data/cxc/csv2cxc-config-a-b.json <<'JSON'
-        {
-          "pdb": "9kbz",
-          "model_id": 1,
-          "receptor_chain": "A",
-          "ligand_chain": "B",
-          "transparency": 65,
-          "issmalmol": false,
-          "receptor_color": "gray",
-          "ligand_color": "green"
-        }
-        JSON
-
-        pliparser csv2cxc \
-          --input integration-data/csv/9kbz-a-b \
-          --output integration-data/cxc/9kbz-a-b.cxc \
-          --config integration-data/cxc/csv2cxc-config-a-b.json
-
-    - name: "generate PLIP report (use case 2: nucleic-acid receptor)"
-      run: |
-        mkdir -p integration-data/raw/9kbz-cd-b
-        docker run --rm \
-          -v "${GITHUB_WORKSPACE}/integration-data/raw/9kbz-cd-b:/results" \
-          -w /results \
-          --user "$(id -u):$(id -g)" \
-          pharmai/plip:latest -i 9kbz -t --dnareceptor --chains "[['C','D'], ['A','B']]"
-    - name: convert PLIP report to csv (use case 2)
-      run: |
-        mkdir -p integration-data/csv/9kbz-cd-b
-        REPORT_PATH="$(find integration-data/raw/9kbz-cd-b -type f -name '*.txt' | head -n 1)"
-        if [ -z "$REPORT_PATH" ]; then
-          echo "No .txt PLIP report found in integration-data/raw/9kbz-cd-b"
-          find integration-data/raw/9kbz-cd-b -maxdepth 3 -type f || true
-          exit 1
-        fi
-        pliparser plip2csv --input "$REPORT_PATH" --output integration-data/csv/9kbz-cd-b
-    - name: verify csv output (use case 2)
-      run: |
-        CSV_COUNT="$(find integration-data/csv/9kbz-cd-b -type f -name '*.csv' | wc -l | tr -d ' ')"
-        echo "Generated CSV files: $CSV_COUNT"
-        if [ "$CSV_COUNT" -eq 0 ]; then
-          echo "No CSV files were generated"
-          exit 1
-        fi
-    - name: "convert csv to cxc (use case 2: RNA receptor chains C,D)"
-      run: |
-        cat > integration-data/cxc/csv2cxc-config-cd.json <<'JSON'
-        {
-          "pdb": "9kbz",
-          "model_id": 1,
-          "receptor_chain": "C,D",
-          "ligand_chain": "A,B",
-          "transparency": 65,
-          "issmalmol": false,
-          "receptor_color": "gray",
-          "ligand_color": "cornflowerblue"
-        }
-        JSON
-
-        pliparser csv2cxc \
-          --input integration-data/csv/9kbz-cd-b \
-          --output integration-data/cxc/9kbz-cd-b.cxc \
-          --config integration-data/cxc/csv2cxc-config-cd.json
-    - name: "convert csv to cxc with interaction filter (use case 1: chain A, no hydrophobic/hydrogen bonds)"
-      run: |
-        pliparser csv2cxc \
-          --input integration-data/csv/9kbz-a-b \
-          --output integration-data/cxc/9kbz-a-b-filtered.cxc \
-          --config integration-data/cxc/csv2cxc-config-a-b.json \
-          --interaction-types pi-stacking pi-cation water_bridge salt_bridge halogen_bond metal_complexes
-    - name: verify cxc outputs
-      run: |
-        for CXC_PATH in integration-data/cxc/9kbz-a-b.cxc integration-data/cxc/9kbz-cd-b.cxc integration-data/cxc/9kbz-a-b-filtered.cxc; do
-          if [ ! -s "$CXC_PATH" ]; then
-            echo "CXC file was not generated or is empty: $CXC_PATH"
-            exit 1
-          fi
-          grep -q "# ChimeraX Command File" "$CXC_PATH" || {
-            echo "CXC output does not contain expected header: $CXC_PATH"
-            exit 1
-          }
-        done
-        if grep -qE "name (hydrophobic_interactions|hydrogen_bonds)" integration-data/cxc/9kbz-a-b-filtered.cxc; then
-          echo "Filtered CXC must not contain hydrophobic or hydrogen bond interactions"
-          exit 1
-        fi
-        echo "Filter verified: no hydrophobic or hydrogen bond interactions in filtered output"
-    - name: upload integration artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: integration-9kbz-data
-        path: |
-          integration-data/raw/9kbz-a-b
-          integration-data/raw/9kbz-cd-b
-          integration-data/csv
-          integration-data/cxc
-
   integration-plip-testsuite:
     name: "integration (${{ matrix.pdb }} - ${{ matrix.label }})"
     runs-on: ubuntu-latest
@@ -480,6 +338,13 @@ jobs:
             ligand_chain: 'A'
             issmalmol: true
             plip_flags: ''
+          - pdb: '9kbz'
+            label: 'RNA receptor, protein ligand (explicit --chains)'
+            expect_type: ''
+            receptor_chain: 'C,D'
+            ligand_chain: 'A,B'
+            issmalmol: false
+            plip_flags: '--dnareceptor --chains "[[''C'',''D''], [''A'',''B'']]"'
     steps:
     - uses: actions/checkout@v6
       with:

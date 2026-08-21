@@ -137,33 +137,43 @@ Notes
 CI End-to-End Example (as in GitHub Actions)
 =============================================
 
-The integration job in ``.github/workflows/github-actions.yml`` validates the full pipeline:
+The ``integration-plip-testsuite`` job in ``.github/workflows/github-actions.yml`` runs
+this exact pipeline against a curated set of PDB structures taken from `PLIP's own test
+suite <https://github.com/pharmai/plip/tree/master/plip/test/pdb>`_, chosen so that every
+PLIP interaction type (hydrophobic, hydrogen bond, water bridge, salt bridge, pi-stacking,
+pi-cation, halogen bond, metal complex) plus DNA/RNA-receptor, DNA-ligand, peptide-ligand,
+and NMR-ensemble scenarios are each exercised at least once:
 
 1. Generate a real PLIP report with Docker.
 2. Convert the report to CSV.
-3. Convert CSV to CXC.
-4. Validate that output files exist and are non-empty.
+3. Convert CSV to CXC (JSON config, explicit CLI flags, ``--label-residues``, and
+   ``--interaction-types`` filtering are all exercised for every structure).
+4. Validate that output files exist, are non-empty, and contain the expected interaction
+   type.
+
+The commands below reproduce the ``1acj`` matrix entry (Tacrine bound to
+acetylcholinesterase, a pi-stacking interaction) end to end.
 
 Step 1: Generate the PLIP report with Docker
 ---------------------------------------------
 
 .. code-block:: bash
 
-    mkdir -p integration-data/raw/1vsn
+    mkdir -p integration-data/raw/1acj
     docker run --rm \
-      -v "${PWD}/integration-data/raw/1vsn:/results" \
+      -v "${PWD}/integration-data/raw/1acj:/results" \
       -w /results \
       --user "$(id -u):$(id -g)" \
-      pharmai/plip:latest -i 1vsn -t
+      pharmai/plip:latest -i 1acj -t
 
 Step 2: Convert PLIP report to CSV
 ----------------------------------
 
 .. code-block:: bash
 
-    mkdir -p integration-data/csv
-    REPORT_PATH="$(find integration-data/raw/1vsn -type f -name '*.txt' | head -n 1)"
-    pliparser plip2csv --input "$REPORT_PATH" --output integration-data/csv
+    mkdir -p integration-data/csv/1acj
+    REPORT_PATH="$(find integration-data/raw/1acj -type f -name '*.txt' | head -n 1)"
+    pliparser plip2csv --input "$REPORT_PATH" --output integration-data/csv/1acj
 
 Step 3: Convert CSV to CXC
 --------------------------
@@ -171,9 +181,9 @@ Step 3: Convert CSV to CXC
 .. code-block:: bash
 
     mkdir -p integration-data/cxc
-    cat > integration-data/cxc/csv2cxc-config.json <<'JSON'
+    cat > integration-data/cxc/csv2cxc-config-1acj.json <<'JSON'
     {
-      "pdb": "1vsn",
+      "pdb": "1acj",
       "model_id": 1,
       "receptor_chain": "A",
       "ligand_chain": "A",
@@ -185,14 +195,43 @@ Step 3: Convert CSV to CXC
     JSON
 
     pliparser csv2cxc \
-      --input integration-data/csv \
-      --output integration-data/cxc/1vsn.cxc \
-      --config integration-data/cxc/csv2cxc-config.json
+      --input integration-data/csv/1acj \
+      --output integration-data/cxc/1acj.cxc \
+      --config integration-data/cxc/csv2cxc-config-1acj.json
 
 Step 4: Quick output checks
 ---------------------------
 
 .. code-block:: bash
 
-    find integration-data/csv -type f -name '*.csv'
-    test -s integration-data/cxc/1vsn.cxc
+    test -f integration-data/csv/1acj/pi-stacking.csv
+    test -s integration-data/cxc/1acj.cxc
+    grep -q "name pi-stacking" integration-data/cxc/1acj.cxc
+
+Macromolecule receptor/ligand example (nucleic acid receptor)
+---------------------------------------------------------------
+
+For a nucleic-acid receptor with a macromolecule (protein) ligand, PLIP needs the
+``--dnareceptor`` flag (it applies to RNA as well as DNA) plus an explicit ``--chains``
+grouping, and ``csv2cxc`` needs ``issmalmol: false`` so the whole ligand chain is shown
+instead of just its heteroatoms. This reproduces the ``9kbz`` matrix entry:
+
+.. code-block:: bash
+
+    docker run --rm \
+      -v "${PWD}/integration-data/raw/9kbz:/results" \
+      -w /results \
+      --user "$(id -u):$(id -g)" \
+      pharmai/plip:latest -i 9kbz -t --dnareceptor --chains "[['C','D'], ['A','B']]"
+
+    pliparser csv2cxc \
+      --input integration-data/csv/9kbz \
+      --output integration-data/cxc/9kbz.cxc \
+      --pdb 9kbz \
+      --model-id 1 \
+      --receptor-chain C,D \
+      --ligand-chain A,B \
+      --transparency 65 \
+      --no-issmalmol \
+      --receptor-color gray \
+      --ligand-color cornflowerblue
