@@ -89,7 +89,7 @@ class TestGetArguments:
             assert args.pdb == "protein.pdb"
             assert args.model_id == 1
             assert args.issmalmol is True
-            assert args.label_residues is False
+            assert args.label_residues is None
 
     def test_get_arguments_csv2cxc_with_label_residues_flag(self):
         """Test parsing csv2cxc with --label-residues enabled."""
@@ -126,7 +126,31 @@ class TestRun:
         with patch.object(sys, "argv", ["prog", *test_args]):
             run()
             mock_run_csv2cxc_with_config.assert_called_once_with(
-                "csv_dir", "out.cxc", config=None, config_path="cfg.json", interaction_types=None
+                "csv_dir", "out.cxc", config=None, config_path="cfg.json", interaction_types=None, label_residues=None
+            )
+
+    @patch("pliparser.cli.run_csv2cxc_with_config")
+    def test_run_csv2cxc_subcommand_with_json_and_label_residues(self, mock_run_csv2cxc_with_config):
+        """Test that --label-residues still takes effect when --config (JSON) is also used.
+
+        Regression test: previously, run() only folded --label-residues into the config
+        when no --config/JSON path was given, so combining --config with --label-residues
+        silently dropped the flag.
+        """
+        test_args = [
+            "csv2cxc",
+            "--input",
+            "csv_dir",
+            "--output",
+            "out.cxc",
+            "--config",
+            "cfg.json",
+            "--label-residues",
+        ]
+        with patch.object(sys, "argv", ["prog", *test_args]):
+            run()
+            mock_run_csv2cxc_with_config.assert_called_once_with(
+                "csv_dir", "out.cxc", config=None, config_path="cfg.json", interaction_types=None, label_residues=True
             )
 
     @patch("pliparser.cli.run_csv2cxc_with_config")

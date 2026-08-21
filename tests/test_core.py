@@ -111,6 +111,35 @@ def test_run_csv2cxc_with_config_forwards_interaction_types(mock_write_cxc_file)
     assert kwargs["interaction_types"] == interaction_types
 
 
+@patch("pliparser.core.read_json_config")
+@patch("pliparser.core.write_cxc_file")
+def test_run_csv2cxc_with_config_label_residues_overrides_json(mock_write_cxc_file, mock_read_json_config):
+    """label_residues must override the JSON-loaded config, not be shadowed by it.
+
+    Regression test for a bug where --label-residues had no effect when combined
+    with --config, because the JSON config was used as-is with no way to layer the
+    CLI flag on top of it.
+    """
+    mock_read_json_config.return_value = {"model_id": 1, "label_residues": False}
+
+    run_csv2cxc_with_config("csv_dir", "out.cxc", config_path="cfg.json", label_residues=True)
+
+    call_args = mock_write_cxc_file.call_args
+    assert call_args[0][2] == {"model_id": 1, "label_residues": True}
+
+
+@patch("pliparser.core.read_json_config")
+@patch("pliparser.core.write_cxc_file")
+def test_run_csv2cxc_with_config_label_residues_none_keeps_json_value(mock_write_cxc_file, mock_read_json_config):
+    """When label_residues is not explicitly passed, the JSON config's value is kept as-is."""
+    mock_read_json_config.return_value = {"model_id": 1, "label_residues": True}
+
+    run_csv2cxc_with_config("csv_dir", "out.cxc", config_path="cfg.json")
+
+    call_args = mock_write_cxc_file.call_args
+    assert call_args[0][2] == {"model_id": 1, "label_residues": True}
+
+
 @patch("pliparser.core.plip2csv_stream")
 def test_run_plip2csv_converts_to_path_objects(mock_plip2csv_stream):
     run_plip2csv("input.txt", "output_dir")

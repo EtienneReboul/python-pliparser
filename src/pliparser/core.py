@@ -45,6 +45,7 @@ def run_csv2cxc_with_config(
     config: Optional[dict] = None,
     config_path: Optional[Union[str, Path]] = None,
     interaction_types: Optional[set[str]] = None,
+    label_residues: Optional[bool] = None,
 ) -> None:
     """Convert interaction CSV files to a CXC file using JSON or CLI config.
 
@@ -59,6 +60,10 @@ def run_csv2cxc_with_config(
     config_path : Optional[Union[str, Path]]
         Optional JSON config path. When provided, JSON takes precedence and
         ``config`` is ignored.
+    label_residues : Optional[bool]
+        When set, overrides the config's ``label_residues`` value. This lets the
+        CLI's ``--label-residues``/``--no-label-residues`` flags take effect even
+        when ``--config`` (JSON) is used. Leave as None to use the config's value.
     """
     if config_path is not None:
         resolved_config = read_json_config(Path(config_path))
@@ -66,6 +71,9 @@ def run_csv2cxc_with_config(
         resolved_config = config
     else:
         raise ValueError("Either 'config_path' or 'config' must be provided for csv2cxc")
+
+    if label_residues is not None:
+        resolved_config["label_residues"] = label_residues
 
     write_cxc_file(Path(input_csv_path), Path(output_cxc_path), resolved_config, interaction_types=interaction_types)
 

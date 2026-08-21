@@ -67,8 +67,9 @@ def get_arguments(args=None):
     csv2cxc_parser.add_argument(
         "--label-residues",
         action=argparse.BooleanOptionalAction,
-        default=False,
-        help="Add ChimeraX labels to residues involved in interactions.",
+        default=None,
+        help="Add ChimeraX labels to residues involved in interactions. "
+        "Applies with --config too; omit to fall back to the config value (default: no labels).",
     )
 
     parsed_args = parser.parse_args(args=args)
@@ -112,11 +113,18 @@ def run(args=None):
                 "issmalmol": args.issmalmol,
                 "receptor_color": args.receptor_color,
                 "ligand_color": args.ligand_color,
-                "label_residues": args.label_residues,
+                "label_residues": bool(args.label_residues),
             }
 
         interaction_types = set(args.interaction_types) if args.interaction_types else None
-        run_csv2cxc_with_config(args.input, args.output, config=config, config_path=args.config, interaction_types=interaction_types)
+        run_csv2cxc_with_config(
+            args.input,
+            args.output,
+            config=config,
+            config_path=args.config,
+            interaction_types=interaction_types,
+            label_residues=args.label_residues,
+        )
         return
 
     raise ValueError(f"Unknown subcommand: {args.subcommand}")
