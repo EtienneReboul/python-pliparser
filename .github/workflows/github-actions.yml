@@ -372,3 +372,258 @@ jobs:
           integration-data/raw/9kbz-cd-b
           integration-data/csv
           integration-data/cxc
+
+  integration-plip-testsuite:
+    name: "integration (${{ matrix.pdb }} - ${{ matrix.label }})"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        # One matrix entry per structure from PLIP's own test suite
+        # (https://github.com/pharmai/plip/tree/master/plip/test/pdb), curated so that every
+        # PLIP interaction type and every receptor/ligand molecule combination (small-molecule
+        # ligand, DNA ligand, RNA-only receptor, peptide ligand, NMR ensemble) is exercised at
+        # least once. expect_type is the PLIP interaction_type string (matches the CSV filename
+        # produced by plip2csv and the `name` field written by csv2cxc) that this structure is
+        # known to contain; leave it empty to skip the type-presence assertions.
+        include:
+          - pdb: '1acj'
+            label: 'pi-stacking'
+            expect_type: 'pi-stacking'
+            receptor_chain: 'A'
+            ligand_chain: 'A'
+            issmalmol: true
+            plip_flags: ''
+          - pdb: '1p5e'
+            label: 'halogen bond'
+            expect_type: 'halogen_bonds'
+            receptor_chain: 'A'
+            ligand_chain: 'A'
+            issmalmol: true
+            plip_flags: ''
+          - pdb: '3og7'
+            label: 'hydrogen bond'
+            expect_type: 'hydrogen_bonds'
+            receptor_chain: 'A'
+            ligand_chain: 'A'
+            issmalmol: true
+            plip_flags: ''
+          - pdb: '3ems'
+            label: 'water bridge'
+            expect_type: 'water_bridges'
+            receptor_chain: 'A'
+            ligand_chain: 'A'
+            issmalmol: true
+            plip_flags: ''
+          - pdb: '1rmd'
+            label: 'metal complex (zinc)'
+            expect_type: 'metal_complexes'
+            receptor_chain: 'A'
+            ligand_chain: 'A'
+            issmalmol: true
+            plip_flags: ''
+          - pdb: '2pvb'
+            label: 'metal complex (calcium)'
+            expect_type: 'metal_complexes'
+            receptor_chain: 'A'
+            ligand_chain: 'A'
+            issmalmol: true
+            plip_flags: ''
+          - pdb: '6nhb'
+            label: 'pi-cation'
+            expect_type: 'pi-cation_interactions'
+            receptor_chain: 'A'
+            ligand_chain: 'A'
+            issmalmol: true
+            plip_flags: ''
+          - pdb: '2reg'
+            label: 'salt bridge + pi-cation'
+            expect_type: 'salt_bridges'
+            receptor_chain: 'A'
+            ligand_chain: 'A'
+            issmalmol: true
+            plip_flags: ''
+          - pdb: '3r0t'
+            label: 'hydrophobic (comprehensive)'
+            expect_type: 'hydrophobic_interactions'
+            receptor_chain: 'A'
+            ligand_chain: 'A'
+            issmalmol: true
+            plip_flags: ''
+          - pdb: '1tf6'
+            label: 'protein receptor, DNA ligand'
+            expect_type: 'hydrogen_bonds'
+            receptor_chain: 'A'
+            ligand_chain: 'B,C'
+            issmalmol: false
+            plip_flags: ''
+          - pdb: '4yb0'
+            label: 'RNA-only receptor'
+            expect_type: 'salt_bridges'
+            receptor_chain: 'R'
+            ligand_chain: 'R'
+            issmalmol: true
+            plip_flags: '--dnareceptor'
+          - pdb: '4day'
+            label: 'protein receptor, peptide ligand'
+            expect_type: 'hydrogen_bonds'
+            receptor_chain: 'A,B'
+            ligand_chain: 'C'
+            issmalmol: false
+            plip_flags: '--peptides C'
+          - pdb: '2ndo'
+            label: 'NMR ensemble'
+            expect_type: ''
+            receptor_chain: 'A'
+            ligand_chain: 'A'
+            issmalmol: true
+            plip_flags: ''
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.13'
+    - name: install package
+      run: |
+        python -m pip install --progress-bar=off -U pip
+        python -m pip install --progress-bar=off .
+    - name: "generate PLIP report (${{ matrix.pdb }})"
+      run: |
+        mkdir -p "integration-data/raw/${{ matrix.pdb }}"
+        docker run --rm \
+          -v "${GITHUB_WORKSPACE}/integration-data/raw/${{ matrix.pdb }}:/results" \
+          -w /results \
+          --user "$(id -u):$(id -g)" \
+          pharmai/plip:latest -i ${{ matrix.pdb }} -t ${{ matrix.plip_flags }}
+    - name: convert PLIP report to csv
+      run: |
+        mkdir -p "integration-data/csv/${{ matrix.pdb }}"
+        REPORT_PATH="$(find "integration-data/raw/${{ matrix.pdb }}" -type f -name '*.txt' | head -n 1)"
+        if [ -z "$REPORT_PATH" ]; then
+          echo "No .txt PLIP report found for ${{ matrix.pdb }}"
+          find "integration-data/raw/${{ matrix.pdb }}" -maxdepth 3 -type f || true
+          exit 1
+        fi
+        pliparser plip2csv --input "$REPORT_PATH" --output "integration-data/csv/${{ matrix.pdb }}"
+    - name: verify csv output
+      run: |
+        CSV_COUNT="$(find "integration-data/csv/${{ matrix.pdb }}" -type f -name '*.csv' | wc -l | tr -d ' ')"
+        echo "Generated CSV files: $CSV_COUNT"
+        if [ "$CSV_COUNT" -eq 0 ]; then
+          echo "No CSV files were generated"
+          exit 1
+        fi
+        EXPECT_TYPE="${{ matrix.expect_type }}"
+        if [ -n "$EXPECT_TYPE" ] && [ ! -f "integration-data/csv/${{ matrix.pdb }}/${EXPECT_TYPE}.csv" ]; then
+          echo "Expected interaction type '$EXPECT_TYPE' not found for ${{ matrix.pdb }}"
+          find "integration-data/csv/${{ matrix.pdb }}" -maxdepth 1 -type f
+          exit 1
+        fi
+    - name: "csv2cxc via JSON config"
+      run: |
+        mkdir -p integration-data/cxc
+        LIGAND_COLOR="green"
+        if [ "${{ matrix.issmalmol }}" = "false" ]; then
+          LIGAND_COLOR="cornflowerblue"
+        fi
+        cat > "integration-data/cxc/csv2cxc-config-${{ matrix.pdb }}.json" <<JSON
+        {
+          "pdb": "${{ matrix.pdb }}",
+          "model_id": 1,
+          "receptor_chain": "${{ matrix.receptor_chain }}",
+          "ligand_chain": "${{ matrix.ligand_chain }}",
+          "transparency": 65,
+          "issmalmol": ${{ matrix.issmalmol }},
+          "receptor_color": "gray",
+          "ligand_color": "$LIGAND_COLOR"
+        }
+        JSON
+        pliparser csv2cxc \
+          --input "integration-data/csv/${{ matrix.pdb }}" \
+          --output "integration-data/cxc/${{ matrix.pdb }}.cxc" \
+          --config "integration-data/cxc/csv2cxc-config-${{ matrix.pdb }}.json"
+    - name: "csv2cxc via explicit CLI flags (no --config)"
+      run: |
+        LIGAND_COLOR="green"
+        ISSMALMOL_FLAG="--issmalmol"
+        if [ "${{ matrix.issmalmol }}" = "false" ]; then
+          LIGAND_COLOR="cornflowerblue"
+          ISSMALMOL_FLAG="--no-issmalmol"
+        fi
+        pliparser csv2cxc \
+          --input "integration-data/csv/${{ matrix.pdb }}" \
+          --output "integration-data/cxc/${{ matrix.pdb }}-cliargs.cxc" \
+          --pdb "${{ matrix.pdb }}" \
+          --model-id 1 \
+          --receptor-chain "${{ matrix.receptor_chain }}" \
+          --ligand-chain "${{ matrix.ligand_chain }}" \
+          --transparency 65 \
+          --receptor-color gray \
+          --ligand-color "$LIGAND_COLOR" \
+          $ISSMALMOL_FLAG
+    - name: "csv2cxc with --label-residues"
+      run: |
+        pliparser csv2cxc \
+          --input "integration-data/csv/${{ matrix.pdb }}" \
+          --output "integration-data/cxc/${{ matrix.pdb }}-labeled.cxc" \
+          --config "integration-data/cxc/csv2cxc-config-${{ matrix.pdb }}.json" \
+          --label-residues
+    - name: "csv2cxc with --interaction-types filter (exclude expected type)"
+      if: matrix.expect_type != ''
+      run: |
+        ALL_TYPES=(hydrophobic_interactions hydrogen_bonds water_bridges salt_bridges pi-stacking pi-cation_interactions halogen_bonds metal_complexes)
+        KEEP_TYPES=()
+        for t in "${ALL_TYPES[@]}"; do
+          if [ "$t" != "${{ matrix.expect_type }}" ]; then
+            KEEP_TYPES+=("$t")
+          fi
+        done
+        pliparser csv2cxc \
+          --input "integration-data/csv/${{ matrix.pdb }}" \
+          --output "integration-data/cxc/${{ matrix.pdb }}-filtered.cxc" \
+          --config "integration-data/cxc/csv2cxc-config-${{ matrix.pdb }}.json" \
+          --interaction-types "${KEEP_TYPES[@]}"
+    - name: verify cxc outputs
+      run: |
+        for CXC_PATH in \
+          "integration-data/cxc/${{ matrix.pdb }}.cxc" \
+          "integration-data/cxc/${{ matrix.pdb }}-cliargs.cxc" \
+          "integration-data/cxc/${{ matrix.pdb }}-labeled.cxc"; do
+          if [ ! -s "$CXC_PATH" ]; then
+            echo "CXC file was not generated or is empty: $CXC_PATH"
+            exit 1
+          fi
+          grep -q "# ChimeraX Command File" "$CXC_PATH" || {
+            echo "CXC output does not contain expected header: $CXC_PATH"
+            exit 1
+          }
+        done
+        EXPECT_TYPE="${{ matrix.expect_type }}"
+        if [ -n "$EXPECT_TYPE" ]; then
+          grep -q "name ${EXPECT_TYPE}" "integration-data/cxc/${{ matrix.pdb }}.cxc" || {
+            echo "Expected interaction type '$EXPECT_TYPE' not found in cxc for ${{ matrix.pdb }}"
+            exit 1
+          }
+          grep -q 'label #' "integration-data/cxc/${{ matrix.pdb }}-labeled.cxc" || {
+            echo "--label-residues did not produce label commands for ${{ matrix.pdb }}"
+            exit 1
+          }
+          FILTERED_CXC="integration-data/cxc/${{ matrix.pdb }}-filtered.cxc"
+          if grep -q "name ${EXPECT_TYPE}" "$FILTERED_CXC"; then
+            echo "Filtered cxc for ${{ matrix.pdb }} still contains excluded type '$EXPECT_TYPE'"
+            exit 1
+          fi
+        fi
+    - name: upload integration artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: integration-${{ matrix.pdb }}-data
+        path: |
+          integration-data/raw/${{ matrix.pdb }}
+          integration-data/csv/${{ matrix.pdb }}
+          integration-data/cxc
