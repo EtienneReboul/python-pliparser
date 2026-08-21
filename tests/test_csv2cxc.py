@@ -1,4 +1,3 @@
-import math
 from pathlib import Path
 
 import pytest
@@ -12,93 +11,10 @@ from pliparser.csv2cxc import create_label_command
 from pliparser.csv2cxc import create_marker
 from pliparser.csv2cxc import create_reveal_command
 from pliparser.csv2cxc import get_marker_type_from_row
-from pliparser.csv2cxc import triangulate_water_coordinate
 from pliparser.csv2cxc import write_cxc_file
 from pliparser.pbonds import PBONDS
 
 _DUMMY_CONFIG = {"issmalmol": False}
-
-
-def _angle_at_water(
-    acceptor: tuple[float, float, float],
-    donor: tuple[float, float, float],
-    water: tuple[float, float, float],
-) -> float:
-    aw = (acceptor[0] - water[0], acceptor[1] - water[1], acceptor[2] - water[2])
-    dw = (donor[0] - water[0], donor[1] - water[1], donor[2] - water[2])
-    dot = aw[0] * dw[0] + aw[1] * dw[1] + aw[2] * dw[2]
-    aw_norm = math.sqrt(aw[0] ** 2 + aw[1] ** 2 + aw[2] ** 2)
-    dw_norm = math.sqrt(dw[0] ** 2 + dw[1] ** 2 + dw[2] ** 2)
-    return math.degrees(math.acos(dot / (aw_norm * dw_norm)))
-
-
-def test_triangulate_water_coordinate_matches_distances_and_angle() -> None:
-    row = {
-        "interaction_type": "water_bridge",
-        "protisdon": "True",
-        "ligcoo": "0.0,0.0,0.0",
-        "protcoo": "3.0,0.0,0.0",
-        "dist_a-w": "2.0",
-        "dist_d-w": "2.5",
-        "water_angle": "82.81924421854171",
-    }
-
-    water = triangulate_water_coordinate(row)
-
-    acceptor = (0.0, 0.0, 0.0)
-    donor = (3.0, 0.0, 0.0)
-    assert math.isclose(math.dist(acceptor, water), 2.0, abs_tol=1e-6)
-    assert math.isclose(math.dist(donor, water), 2.5, abs_tol=1e-6)
-    assert math.isclose(_angle_at_water(acceptor, donor, water), 82.81924421854171, abs_tol=1e-6)
-
-
-def test_triangulate_water_coordinate_handles_protisdon_false() -> None:
-    row = {
-        "interaction_type": "water_bridge",
-        "protisdon": "False",
-        "ligcoo": "3.0,0.0,0.0",
-        "protcoo": "0.0,0.0,0.0",
-        "dist_a-w": "2.0",
-        "dist_d-w": "2.5",
-        "water_angle": "82.81924421854171",
-    }
-
-    water = triangulate_water_coordinate(row)
-
-    acceptor = (0.0, 0.0, 0.0)
-    donor = (3.0, 0.0, 0.0)
-    assert math.isclose(math.dist(acceptor, water), 2.0, abs_tol=1e-6)
-    assert math.isclose(math.dist(donor, water), 2.5, abs_tol=1e-6)
-
-
-def test_triangulate_water_coordinate_rejects_non_water_bridge_row() -> None:
-    row = {
-        "interaction_type": "hydrogen_bond",
-        "protisdon": "True",
-        "ligcoo": "0.0,0.0,0.0",
-        "protcoo": "3.0,0.0,0.0",
-        "dist_a-w": "2.0",
-        "dist_d-w": "2.5",
-        "water_angle": "82.0",
-    }
-
-    with pytest.raises(ValueError, match="requires a water_bridge"):
-        triangulate_water_coordinate(row)
-
-
-def test_triangulate_water_coordinate_rejects_inconsistent_geometry() -> None:
-    row = {
-        "interaction_type": "water_bridge",
-        "protisdon": "True",
-        "ligcoo": "0.0,0.0,0.0",
-        "protcoo": "10.0,0.0,0.0",
-        "dist_a-w": "2.0",
-        "dist_d-w": "2.5",
-        "water_angle": "82.0",
-    }
-
-    with pytest.raises(ValueError, match="Inconsistent water-bridge geometry"):
-        triangulate_water_coordinate(row)
 
 
 def test_parse_xyz_parses_values() -> None:
@@ -246,6 +162,17 @@ def test_create_interaction_commands_requires_protein_coordinates() -> None:
         create_interaction_commands(row, marker_counter=0, model_idces=(1, 1), config=_DUMMY_CONFIG)
 
 
+def test_create_interaction_commands_requires_water_coordinates() -> None:
+    row = {
+        "interaction_type": "water_bridge",
+        "protisdon": "True",
+        "ligcoo": "0.0,0.0,0.0",
+        "protcoo": "3.0,0.0,0.0",
+    }
+    with pytest.raises(ValueError, match="Row must contain 'watercoo' key with coordinates"):
+        create_interaction_commands(row, marker_counter=0, model_idces=(1, 1), config=_DUMMY_CONFIG)
+
+
 def test_create_interaction_commands_builds_non_water_bridge(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(csv2cxc.PBONDS, "hydrogen_bonds", PBONDS["hydrogen_bonds"])
     row = {
@@ -318,9 +245,7 @@ def test_create_interaction_commands_builds_water_bridge(monkeypatch: pytest.Mon
         "protisdon": "True",
         "ligcoo": "0.0,0.0,0.0",
         "protcoo": "3.0,0.0,0.0",
-        "dist_a-w": "2.0",
-        "dist_d-w": "2.5",
-        "water_angle": "82.81924421854171",
+        "watercoo": "1.2,0.5,-0.3",
         "resnr": "1",
         "restype": "ALA",
         "reschain": "A",
@@ -331,6 +256,7 @@ def test_create_interaction_commands_builds_water_bridge(monkeypatch: pytest.Mon
 
     cmd, marker_counter = create_interaction_commands(row, marker_counter=0, model_idces=(1, 1), config=_DUMMY_CONFIG)
 
+    assert "marker #1.1 position 1.2,0.5,-0.3" in cmd
     assert marker_counter == 3
     assert cmd.count("marker #1.1 position") == 3
     assert cmd.count("name water_bridge") == 2

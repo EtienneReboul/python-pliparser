@@ -1,5 +1,4 @@
 import csv
-import math
 from pathlib import Path
 from typing import Union
 
@@ -46,108 +45,6 @@ def _parse_xyz(coords: str, field_name: str) -> tuple[float, float, float]:
     if len(values) != 3:
         raise ValueError(f"Row must contain '{field_name}' as 'x,y,z'")
     return (float(values[0]), float(values[1]), float(values[2]))
-
-
-def triangulate_water_coordinate(row: dict[str, str], consistency_tolerance: float = 0.35) -> tuple[float, float, float]:
-    """Triangulate a 3D water position for a water-bridge interaction row.
-
-    The function uses:
-    - ``ligcoo`` and ``protcoo`` as ligand/protein interaction centers,
-    - ``protisdon`` to identify donor vs acceptor,
-    - ``dist_a-w`` and ``dist_d-w`` as acceptor-water and donor-water distances,
-    - ``water_angle`` as the donor-water-acceptor angle in degrees.
-
-    Because two mirrored 3D points can satisfy the same triangle constraints, this
-    implementation returns a deterministic solution by choosing a fixed normal
-    orientation based on global axes.
-    """
-
-    interaction_type = row.get("interaction_type", "")
-    if "water_bridge" not in interaction_type:
-        raise ValueError("triangulate_water_coordinate requires a water_bridge interaction row")
-
-    ligcoo = row.get("ligcoo", "")
-    protcoo = row.get("protcoo", "")
-    protisdon = row.get("protisdon")
-    dist_aw = row.get("dist_a-w")
-    dist_dw = row.get("dist_d-w")
-    water_angle = row.get("water_angle")
-
-    if not ligcoo:
-        raise ValueError("Row must contain 'ligcoo' key with coordinates")
-    if not protcoo:
-        raise ValueError("Row must contain 'protcoo' key with coordinates")
-    if protisdon not in {"True", "False"}:
-        raise ValueError("Row must contain 'protisdon' key with value 'True' or 'False'")
-    if dist_aw is None:
-        raise ValueError("Row must contain 'dist_a-w' key")
-    if dist_dw is None:
-        raise ValueError("Row must contain 'dist_d-w' key")
-    if water_angle is None:
-        raise ValueError("Row must contain 'water_angle' key")
-
-    lig = _parse_xyz(ligcoo, "ligcoo")
-    prot = _parse_xyz(protcoo, "protcoo")
-    acceptor_water = float(dist_aw)
-    donor_water = float(dist_dw)
-    angle_deg = float(water_angle)
-
-    if protisdon == "True":
-        donor = prot
-        acceptor = lig
-    else:
-        donor = lig
-        acceptor = prot
-
-    adx = donor[0] - acceptor[0]
-    ady = donor[1] - acceptor[1]
-    adz = donor[2] - acceptor[2]
-    acceptor_donor = math.sqrt(adx * adx + ady * ady + adz * adz)
-    if acceptor_donor == 0:
-        raise ValueError("ligcoo and protcoo must not be identical for water triangulation")
-
-    theta = math.radians(angle_deg)
-    expected_acceptor_donor = math.sqrt(
-        max(
-            0.0,
-            acceptor_water * acceptor_water + donor_water * donor_water - 2.0 * acceptor_water * donor_water * math.cos(theta),
-        )
-    )
-    if abs(expected_acceptor_donor - acceptor_donor) > consistency_tolerance:
-        raise ValueError("Inconsistent water-bridge geometry: distances/angle do not match ligcoo-protcoo separation")
-
-    ux = adx / acceptor_donor
-    uy = ady / acceptor_donor
-    uz = adz / acceptor_donor
-
-    x = (acceptor_water * acceptor_water - donor_water * donor_water + acceptor_donor * acceptor_donor) / (2.0 * acceptor_donor)
-    radial2 = acceptor_water * acceptor_water - x * x
-    if radial2 < -1e-8:
-        raise ValueError("Inconsistent water-bridge geometry: no real 3D water solution")
-    radial = math.sqrt(max(0.0, radial2))
-
-    refx, refy, refz = (0.0, 0.0, 1.0)
-    if abs(ux * refx + uy * refy + uz * refz) > 0.99:
-        refx, refy, refz = (0.0, 1.0, 0.0)
-
-    # Build a deterministic perpendicular basis from the donor-acceptor axis.
-    nx = uy * refz - uz * refy
-    ny = uz * refx - ux * refz
-    nz = ux * refy - uy * refx
-    n_norm = math.sqrt(nx * nx + ny * ny + nz * nz)
-    if n_norm == 0:
-        raise ValueError("Failed to build a stable triangulation frame")
-    nx /= n_norm
-    ny /= n_norm
-    nz /= n_norm
-
-    water = (
-        acceptor[0] + x * ux + radial * nx,
-        acceptor[1] + x * uy + radial * ny,
-        acceptor[2] + x * uz + radial * nz,
-    )
-
-    return water
 
 
 def get_marker_type_from_row(row: dict[str, str], entity_type: str) -> str:  # pyright: ignore[reportReturnType] # will raise no None return possible
@@ -526,8 +423,13 @@ def create_interaction_commands(row: dict[str, str], marker_counter: int, model_
     marker_counter += 1
 
     if "water_bridge" in interaction_type:
-        # triangulate water coordinates and create water marker
-        water_coords = triangulate_water_coordinate(row)
+        # PLIP's report already includes the water molecule's own coordinates
+        # (the WATERCOO column), so use them directly instead of reconstructing
+        # them from distances/angle.
+        watercoo = row.get("watercoo", "")
+        if not watercoo:
+            raise ValueError("Row must contain 'watercoo' key with coordinates for water_bridge interactions")
+        water_coords = _parse_xyz(watercoo, "watercoo")
         marker_key = get_marker_type_from_row(row, entity_type="water")
         chimerax_command += create_marker(marker_key, f"#{model_idces[0]}.{model_idces[1]}", water_coords)
         marker_counter += 1
