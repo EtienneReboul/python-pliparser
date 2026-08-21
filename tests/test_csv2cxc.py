@@ -260,6 +260,11 @@ def test_create_interaction_commands_builds_water_bridge(monkeypatch: pytest.Mon
     assert marker_counter == 3
     assert cmd.count("marker #1.1 position") == 3
     assert cmd.count("name water_bridge") == 2
+    # Markers are created in order ligand(1), receptor(2), water(3). The bridge must be
+    # ligand<->water and receptor<->water, never a direct ligand<->receptor bond.
+    assert "pbond #1.1:2 #1.1:3 " in cmd
+    assert "pbond #1.1:1 #1.1:3 " in cmd
+    assert "pbond #1.1:1 #1.1:2 " not in cmd
 
 
 @pytest.mark.parametrize(

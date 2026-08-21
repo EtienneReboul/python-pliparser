@@ -448,8 +448,11 @@ def create_interaction_commands(row: dict[str, str], marker_counter: int, model_
     chimerax_command += f"color {pbond_params.color} radius {pbond_params.radius} dashes {pbond_params.dashes} name {interaction_type}\n"
 
     if "water_bridge" in interaction_type:
+        # The generic pbond above already connects receptor-water (the last two
+        # markers created). Add the missing ligand-water leg here so the bridge
+        # is ligand<->water<->receptor instead of a direct ligand-receptor bond.
         chimerax_command += (
-            f"pbond #{model_idces[0]}.{model_idces[1]}:{marker_counter - 2} #{model_idces[0]}.{model_idces[1]}:{marker_counter - 1} "
+            f"pbond #{model_idces[0]}.{model_idces[1]}:{marker_counter - 2} #{model_idces[0]}.{model_idces[1]}:{marker_counter} "
         )
         chimerax_command += (
             f"color {pbond_params.color} radius {pbond_params.radius} dashes {pbond_params.dashes} name {interaction_type}\n"
