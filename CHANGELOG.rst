@@ -2,6 +2,18 @@
 Changelog
 =========
 
+0.1.5 (2026-08-21)
+------------------
+
+* Added ``--label-residues`` flag to ``csv2cxc`` to add ChimeraX text labels (residue type, number, and chain) on every receptor and ligand residue involved in an interaction. Available on both the CLI and the JSON config (``"label_residues": true``).
+* Fixed ``--label-residues`` being silently ignored whenever ``--config`` (JSON) was also provided; the flag now overrides the config's value on both the CLI and the Python API (``run_csv2cxc_with_config``).
+* Fixed water-bridge marker placement: the water marker position is now read directly from PLIP's own ``WATERCOO`` column instead of being reconstructed from distances and an angle that do not describe the same triangle, which could raise a spurious "Inconsistent water-bridge geometry" error on real PLIP reports.
+* Fixed water-bridge pseudobonds incorrectly connecting ligand directly to receptor instead of forming the ligand-water and water-receptor bridge.
+* Fixed marker sets colliding with ChimeraX's own per-structure label overlay (both claimed sub-model ``#1.1``), which aborted the rest of the generated ``.cxc`` script whenever ``--label-residues`` was used; marker sets now live in a reserved top-level model range instead of nesting under the receptor structure.
+* Extended CI integration tests with a curated set of 14 PDB structures from PLIP's own test suite, covering every PLIP interaction type plus DNA-ligand, RNA-only-receptor, RNA-receptor-with-protein-ligand (explicit ``--chains``/``--dnareceptor``), peptide-ligand, and NMR-ensemble scenarios.
+* Removed the old single-structure (9kbz) integration job now that the curated matrix covers the same ground, and rewrote ``docs/usage.rst``'s CI walkthrough to use commands taken directly from the matrix jobs.
+* Fixed ``sphinx-build -b linkcheck`` stalling for minutes retrying rate-limited ``github.com`` links from CI; those links are now skipped by the docs link checker.
+
 0.1.4 (2026-06-03)
 ------------------
 
