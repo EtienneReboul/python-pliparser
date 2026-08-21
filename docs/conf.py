@@ -15,7 +15,7 @@ project = "pliparser"
 year = "2026"
 author = "Etienne Reboul"
 copyright = f"{year}, {author}"
-version = release = "0.1.4"
+version = release = "0.1.5"
 
 pygments_style = "trac"
 templates_path = ["."]
@@ -23,6 +23,18 @@ extlinks = {
     "issue": ("https://github.com/EtienneReboul/python-pliparser/issues/%s", "#%s"),
     "pr": ("https://github.com/EtienneReboul/python-pliparser/pull/%s", "PR #%s"),
 }
+
+# github.com anonymously rate-limits/throttles requests from shared CI IP ranges (this
+# project's own badges, footer links, and cross-references all point at github.com), which
+# made `sphinx-build -b linkcheck` stall for minutes per link waiting out the rate-limit
+# backoff. Skip github.com rather than depend on its tolerance for anonymous CI scraping,
+# and keep timeouts/retries tight so any other flaky external link fails fast instead.
+linkcheck_ignore = [
+    r"^https://github\.com/.*",
+]
+linkcheck_timeout = 10
+linkcheck_retries = 1
+linkcheck_rate_limit_timeout = 15
 
 html_theme = "furo"
 html_theme_options = {
