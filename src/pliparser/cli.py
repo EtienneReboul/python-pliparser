@@ -64,6 +64,12 @@ def get_arguments(args=None):
         metavar="TYPE",
         help="Subset of interaction types to include (e.g. pi-stacking salt_bridge). Omit to include all.",
     )
+    csv2cxc_parser.add_argument(
+        "--label-residues",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Add ChimeraX labels to residues involved in interactions.",
+    )
 
     parsed_args = parser.parse_args(args=args)
 
@@ -106,6 +112,7 @@ def run(args=None):
                 "issmalmol": args.issmalmol,
                 "receptor_color": args.receptor_color,
                 "ligand_color": args.ligand_color,
+                "label_residues": args.label_residues,
             }
 
         interaction_types = set(args.interaction_types) if args.interaction_types else None

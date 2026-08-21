@@ -401,6 +401,55 @@ def create_reveal_command(row: dict[str, str], model_idces: tuple[int, int], con
     return cmd
 
 
+def create_label_command(row: dict[str, str], model_idces: tuple[int, int]) -> str:
+    """
+    Create a ChimeraX command string to label the receptor and ligand residues involved in an interaction.
+
+    Parameters
+    ----------
+    row : dict[str, str]
+        A dictionary containing information about the interaction, including:
+        - 'resnr': Residue number of the receptor.
+        - 'restype': Residue type of the receptor.
+        - 'reschain': Chain identifier of the receptor.
+        - 'resnr_lig': Residue number of the ligand.
+        - 'restype_lig': Residue type of the ligand.
+        - 'reschain_lig': Chain identifier of the ligand.
+    model_idces : tuple[int, int]
+        A tuple containing the model indices for the receptor and ligand.
+
+    Returns
+    -------
+    str
+        A ChimeraX command string that labels the receptor and ligand residues.
+
+    Examples
+    --------
+    >>> row = {
+    ...     'resnr': '45',
+    ...     'restype': 'ARG',
+    ...     'reschain': 'A',
+    ...     'resnr_lig': '10',
+    ...     'restype_lig': 'LIG',
+    ...     'reschain_lig': 'B'
+    ... }
+    >>> cmd = create_label_command(row, (1, 2))
+    >>> print(cmd)
+    label #1/A:45 text "ARG45A"
+    label #1/B:10 text "LIG10B"
+    """
+    resnr = row.get("resnr")
+    restype = row.get("restype")
+    reschain = row.get("reschain")
+    resnr_lig = row.get("resnr_lig")
+    restype_lig = row.get("restype_lig")
+    reschain_lig = row.get("reschain_lig")
+
+    cmd = f'label #{model_idces[0]}/{reschain}:{resnr} text "{restype}{resnr}{reschain}"\n'
+    cmd += f'label #{model_idces[0]}/{reschain_lig}:{resnr_lig} text "{restype_lig}{resnr_lig}{reschain_lig}"\n'
+    return cmd
+
+
 def create_interaction_commands(row: dict[str, str], marker_counter: int, model_idces: tuple[int, int], config: dict) -> tuple[str, int]:
     """
     Create a ChimeraX command string for an interaction between two markers.
@@ -442,6 +491,10 @@ def create_interaction_commands(row: dict[str, str], marker_counter: int, model_
 
     # reveal residues involved in the interaction
     chimerax_command += create_reveal_command(row, model_idces, config)
+
+    # label residues involved in the interaction
+    if config.get("label_residues"):
+        chimerax_command += create_label_command(row, model_idces)
 
     # extract interaction type and coordinates from the row
     interaction_type = row.get("interaction_type")

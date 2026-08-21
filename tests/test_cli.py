@@ -89,6 +89,23 @@ class TestGetArguments:
             assert args.pdb == "protein.pdb"
             assert args.model_id == 1
             assert args.issmalmol is True
+            assert args.label_residues is False
+
+    def test_get_arguments_csv2cxc_with_label_residues_flag(self):
+        """Test parsing csv2cxc with --label-residues enabled."""
+        test_args = [
+            "csv2cxc",
+            "--input",
+            "csv_dir",
+            "--output",
+            "out.cxc",
+            "--config",
+            "cfg.json",
+            "--label-residues",
+        ]
+        with patch.object(sys, "argv", ["prog", *test_args]):
+            args = get_arguments()
+            assert args.label_residues is True
 
 
 class TestRun:
@@ -152,7 +169,39 @@ class TestRun:
                 "issmalmol": True,
                 "receptor_color": "gray",
                 "ligand_color": "green",
+                "label_residues": False,
             }
+
+    @patch("pliparser.cli.run_csv2cxc_with_config")
+    def test_run_csv2cxc_subcommand_with_label_residues(self, mock_run_csv2cxc_with_config):
+        """Test run function forwards --label-residues in the explicit-options config."""
+        test_args = [
+            "csv2cxc",
+            "--input",
+            "csv_dir",
+            "--output",
+            "out.cxc",
+            "--pdb",
+            "protein.pdb",
+            "--model-id",
+            "1",
+            "--receptor-chain",
+            "A",
+            "--ligand-chain",
+            "B",
+            "--transparency",
+            "65",
+            "--receptor-color",
+            "gray",
+            "--ligand-color",
+            "green",
+            "--issmalmol",
+            "--label-residues",
+        ]
+        with patch.object(sys, "argv", ["prog", *test_args]):
+            run()
+            _, kwargs = mock_run_csv2cxc_with_config.call_args
+            assert kwargs["config"]["label_residues"] is True
 
     @patch("pliparser.cli.run_csv2cxc_with_config")
     def test_run_csv2cxc_with_interaction_types_filter(self, mock_run_csv2cxc_with_config):

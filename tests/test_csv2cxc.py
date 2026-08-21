@@ -8,6 +8,7 @@ from pliparser.csv2cxc import _parse_xyz
 from pliparser.csv2cxc import create_cxc_header
 from pliparser.csv2cxc import create_interaction_commands
 from pliparser.csv2cxc import create_interaction_comment
+from pliparser.csv2cxc import create_label_command
 from pliparser.csv2cxc import create_marker
 from pliparser.csv2cxc import create_reveal_command
 from pliparser.csv2cxc import get_marker_type_from_row
@@ -213,6 +214,21 @@ def test_create_reveal_command_uses_backbone_when_sidechain_false() -> None:
     assert "color #1/B:10 & sidechain byhetero\n" in cmd
 
 
+def test_create_label_command_labels_receptor_and_ligand() -> None:
+    row = {
+        "resnr": "45",
+        "restype": "ARG",
+        "reschain": "A",
+        "resnr_lig": "10",
+        "restype_lig": "LIG",
+        "reschain_lig": "B",
+    }
+
+    cmd = create_label_command(row, model_idces=(1, 2))
+
+    assert cmd == 'label #1/A:45 text "ARG45A"\nlabel #1/B:10 text "LIG10B"\n'
+
+
 def test_create_interaction_commands_requires_interaction_type() -> None:
     with pytest.raises(ValueError, match="Row must contain 'interaction_type' key"):
         create_interaction_commands({}, marker_counter=0, model_idces=(1, 1), config=_DUMMY_CONFIG)
@@ -251,6 +267,48 @@ def test_create_interaction_commands_builds_non_water_bridge(monkeypatch: pytest
     assert cmd.count("marker #1.1 position") == 2
     assert "pbond #1.1:1 #1.1:2" in cmd
     assert "name hydrogen_bond" in cmd
+
+
+def test_create_interaction_commands_omits_labels_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setitem(csv2cxc.PBONDS, "hydrogen_bonds", PBONDS["hydrogen_bonds"])
+    row = {
+        "interaction_type": "hydrogen_bond",
+        "protisdon": "True",
+        "ligcoo": "0.0,0.0,0.0",
+        "protcoo": "3.0,0.0,0.0",
+        "resnr": "1",
+        "restype": "ALA",
+        "reschain": "A",
+        "resnr_lig": "2",
+        "restype_lig": "LIG",
+        "reschain_lig": "B",
+    }
+
+    cmd, _ = create_interaction_commands(row, marker_counter=0, model_idces=(1, 1), config=_DUMMY_CONFIG)
+
+    assert "label" not in cmd
+
+
+def test_create_interaction_commands_includes_labels_when_enabled(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setitem(csv2cxc.PBONDS, "hydrogen_bonds", PBONDS["hydrogen_bonds"])
+    row = {
+        "interaction_type": "hydrogen_bond",
+        "protisdon": "True",
+        "ligcoo": "0.0,0.0,0.0",
+        "protcoo": "3.0,0.0,0.0",
+        "resnr": "1",
+        "restype": "ALA",
+        "reschain": "A",
+        "resnr_lig": "2",
+        "restype_lig": "LIG",
+        "reschain_lig": "B",
+    }
+    config = {"issmalmol": False, "label_residues": True}
+
+    cmd, _ = create_interaction_commands(row, marker_counter=0, model_idces=(1, 1), config=config)
+
+    assert 'label #1/A:1 text "ALA1A"\n' in cmd
+    assert 'label #1/B:2 text "LIG2B"\n' in cmd
 
 
 def test_create_interaction_commands_builds_water_bridge(monkeypatch: pytest.MonkeyPatch) -> None:

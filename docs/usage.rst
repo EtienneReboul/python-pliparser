@@ -109,12 +109,29 @@ The flag is compatible with both ``--config`` and the explicit option form:
             --ligand-color green \
             --interaction-types pi-stacking salt_bridge
 
+Example 5: Labeling interacting residues
+=========================================
+
+Use ``--label-residues`` to add ChimeraX text labels (residue type, number, and
+chain) on every receptor and ligand residue involved in an interaction.
+
+.. code-block:: bash
+
+        pliparser csv2cxc \
+            --input out/csv/ \
+            --output out/cxc/complex-labeled.cxc \
+            --config cxc-config.json \
+            --label-residues
+
+The flag can also be set to ``true`` in the JSON config via ``"label_residues": true``.
+
 Notes
 =====
 
 - ``--config`` is optional for ``csv2cxc``.
 - If ``--config`` is not provided, all explicit visualization options are required.
 - ``--interaction-types`` is optional. When omitted, all interaction types are included.
+- ``--label-residues`` is optional and defaults to off.
 - Generated ``.cxc`` files can be opened directly in ChimeraX.
 
 CI End-to-End Example (as in GitHub Actions)
