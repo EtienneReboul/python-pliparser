@@ -147,19 +147,19 @@ def test_create_label_command_labels_receptor_and_ligand() -> None:
 
 def test_create_interaction_commands_requires_interaction_type() -> None:
     with pytest.raises(ValueError, match="Row must contain 'interaction_type' key"):
-        create_interaction_commands({}, marker_counter=0, model_idces=(1, 1), config=_DUMMY_CONFIG)
+        create_interaction_commands({}, marker_counter=0, model_idces=(1, 1000), config=_DUMMY_CONFIG)
 
 
 def test_create_interaction_commands_requires_ligand_coordinates() -> None:
     row = {"interaction_type": "hydrogen_bond", "protcoo": "1.0,2.0,3.0", "protisdon": "True"}
     with pytest.raises(ValueError, match="Row must contain 'ligcoo' key with coordinates"):
-        create_interaction_commands(row, marker_counter=0, model_idces=(1, 1), config=_DUMMY_CONFIG)
+        create_interaction_commands(row, marker_counter=0, model_idces=(1, 1000), config=_DUMMY_CONFIG)
 
 
 def test_create_interaction_commands_requires_protein_coordinates() -> None:
     row = {"interaction_type": "hydrogen_bond", "ligcoo": "1.0,2.0,3.0", "protisdon": "True"}
     with pytest.raises(ValueError, match="Row must contain 'protcoo' key with coordinates"):
-        create_interaction_commands(row, marker_counter=0, model_idces=(1, 1), config=_DUMMY_CONFIG)
+        create_interaction_commands(row, marker_counter=0, model_idces=(1, 1000), config=_DUMMY_CONFIG)
 
 
 def test_create_interaction_commands_requires_water_coordinates() -> None:
@@ -170,7 +170,7 @@ def test_create_interaction_commands_requires_water_coordinates() -> None:
         "protcoo": "3.0,0.0,0.0",
     }
     with pytest.raises(ValueError, match="Row must contain 'watercoo' key with coordinates"):
-        create_interaction_commands(row, marker_counter=0, model_idces=(1, 1), config=_DUMMY_CONFIG)
+        create_interaction_commands(row, marker_counter=0, model_idces=(1, 1000), config=_DUMMY_CONFIG)
 
 
 def test_create_interaction_commands_builds_non_water_bridge(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -188,11 +188,11 @@ def test_create_interaction_commands_builds_non_water_bridge(monkeypatch: pytest
         "reschain_lig": "B",
     }
 
-    cmd, marker_counter = create_interaction_commands(row, marker_counter=0, model_idces=(1, 1), config=_DUMMY_CONFIG)
+    cmd, marker_counter = create_interaction_commands(row, marker_counter=0, model_idces=(1, 1000), config=_DUMMY_CONFIG)
 
     assert marker_counter == 2
-    assert cmd.count("marker #1.1 position") == 2
-    assert "pbond #1.1:1 #1.1:2" in cmd
+    assert cmd.count("marker #1000 position") == 2
+    assert "pbond #1000:1 #1000:2" in cmd
     assert "name hydrogen_bond" in cmd
 
 
@@ -211,7 +211,7 @@ def test_create_interaction_commands_omits_labels_by_default(monkeypatch: pytest
         "reschain_lig": "B",
     }
 
-    cmd, _ = create_interaction_commands(row, marker_counter=0, model_idces=(1, 1), config=_DUMMY_CONFIG)
+    cmd, _ = create_interaction_commands(row, marker_counter=0, model_idces=(1, 1000), config=_DUMMY_CONFIG)
 
     assert "label" not in cmd
 
@@ -232,7 +232,7 @@ def test_create_interaction_commands_includes_labels_when_enabled(monkeypatch: p
     }
     config = {"issmalmol": False, "label_residues": True}
 
-    cmd, _ = create_interaction_commands(row, marker_counter=0, model_idces=(1, 1), config=config)
+    cmd, _ = create_interaction_commands(row, marker_counter=0, model_idces=(1, 1000), config=config)
 
     assert 'label #1/A:1 text "ALA1A"\n' in cmd
     assert 'label #1/B:2 text "LIG2B"\n' in cmd
@@ -254,17 +254,17 @@ def test_create_interaction_commands_builds_water_bridge(monkeypatch: pytest.Mon
         "reschain_lig": "B",
     }
 
-    cmd, marker_counter = create_interaction_commands(row, marker_counter=0, model_idces=(1, 1), config=_DUMMY_CONFIG)
+    cmd, marker_counter = create_interaction_commands(row, marker_counter=0, model_idces=(1, 1000), config=_DUMMY_CONFIG)
 
-    assert "marker #1.1 position 1.2,0.5,-0.3" in cmd
+    assert "marker #1000 position 1.2,0.5,-0.3" in cmd
     assert marker_counter == 3
-    assert cmd.count("marker #1.1 position") == 3
+    assert cmd.count("marker #1000 position") == 3
     assert cmd.count("name water_bridge") == 2
     # Markers are created in order ligand(1), receptor(2), water(3). The bridge must be
     # ligand<->water and receptor<->water, never a direct ligand<->receptor bond.
-    assert "pbond #1.1:2 #1.1:3 " in cmd
-    assert "pbond #1.1:1 #1.1:3 " in cmd
-    assert "pbond #1.1:1 #1.1:2 " not in cmd
+    assert "pbond #1000:2 #1000:3 " in cmd
+    assert "pbond #1000:1 #1000:3 " in cmd
+    assert "pbond #1000:1 #1000:2 " not in cmd
 
 
 @pytest.mark.parametrize(
@@ -288,7 +288,7 @@ def test_create_interaction_commands_handles_pi_stacking_annotations(stacking_ty
         "reschain_lig": "B",
     }
 
-    cmd, marker_counter = create_interaction_commands(row, marker_counter=0, model_idces=(1, 1), config=_DUMMY_CONFIG)
+    cmd, marker_counter = create_interaction_commands(row, marker_counter=0, model_idces=(1, 1000), config=_DUMMY_CONFIG)
 
     assert marker_counter == 2
     assert "name pi-stacking" in cmd
@@ -308,7 +308,7 @@ def test_create_interaction_commands_accepts_plural_interaction_type_from_csv() 
         "reschain_lig": "A",
     }
 
-    cmd, marker_counter = create_interaction_commands(row, marker_counter=0, model_idces=(1, 1), config=_DUMMY_CONFIG)
+    cmd, marker_counter = create_interaction_commands(row, marker_counter=0, model_idces=(1, 1000), config=_DUMMY_CONFIG)
 
     assert marker_counter == 2
     assert "name halogen_bonds" in cmd
@@ -327,11 +327,11 @@ def test_create_interaction_commands_uses_metal_coordination_coordinate_fallback
         "reschain_lig": "B",
     }
 
-    cmd, marker_counter = create_interaction_commands(row, marker_counter=0, model_idces=(1, 1), config=_DUMMY_CONFIG)
+    cmd, marker_counter = create_interaction_commands(row, marker_counter=0, model_idces=(1, 1000), config=_DUMMY_CONFIG)
 
     assert marker_counter == 2
-    assert "marker #1.1 position 10.0,20.0,30.0" in cmd
-    assert "marker #1.1 position 40.0,50.0,60.0" in cmd
+    assert "marker #1000 position 10.0,20.0,30.0" in cmd
+    assert "marker #1000 position 40.0,50.0,60.0" in cmd
     assert "color lightsteelblue" in cmd
     assert "color steelblue" in cmd
     assert "name metal_complexes" in cmd
@@ -352,9 +352,11 @@ def test_create_cxc_header_contains_expected_sections(issmalmol: bool) -> None:
 
     header = create_cxc_header(cfg)
     assert header.startswith("# ChimeraX Command File\n# Generated by pliparser\nopen protein.pdb\n")
-    # Accept both old and new header formats while environments converge on the updated package build.
-    if "close #1.1-100\n" in header:
-        assert "close #1.1-100\n" in header
+    assert "close #1.1-100\n" in header
+    # Marker sets live in a reserved top-level range so they never collide with the
+    # receptor's own sub-models (e.g. ChimeraX's per-structure label overlay, which
+    # otherwise claims "#1.1" itself). Stale marker sets from a prior run must be cleared too.
+    assert f"close #{csv2cxc.MARKER_MODEL_BASE}-{csv2cxc.MARKER_MODEL_BASE + 99}\n" in header
     assert "show #1/A target c\n" in header
     assert "transparency #1/A 65 target c \n" in header
     assert "style stick\n" in header
@@ -379,7 +381,7 @@ def test_write_cxc_file_writes_header_and_commands(tmp_path: Path, monkeypatch: 
 
     def fake_create_commands(row: dict[str, str], marker_counter: int, model_idces: tuple[int, int], config: dict) -> tuple[str, int]:
         assert row["interaction_type"] == "hydrogen_bond"
-        assert model_idces == (1, 1)
+        assert model_idces == (1, csv2cxc.MARKER_MODEL_BASE)
         assert config == {"model_id": 1}
         return f"CMD:{marker_counter}\n", marker_counter + 1
 
@@ -392,7 +394,7 @@ def test_write_cxc_file_writes_header_and_commands(tmp_path: Path, monkeypatch: 
     content = out.read_text(encoding="UTF-8")
     assert content.startswith("# HEADER\n")
     assert "CMD:0\n" in content
-    assert "rename #1.1 hydrogen_bonds\n" in content
+    assert "rename #1000 hydrogen_bonds\n" in content
 
 
 def test_write_cxc_file_filters_interaction_types(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

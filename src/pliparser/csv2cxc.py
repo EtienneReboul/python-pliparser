@@ -6,6 +6,15 @@ from pliparser.markers import MARKERS
 from pliparser.pbonds import PBONDS
 from pliparser.pbonds import PseudobondParamsBase
 
+# Top-level model id where per-interaction-type marker sets start. Markers must NOT be
+# nested as sub-models of the receptor structure (e.g. "#1.1"): ChimeraX itself claims
+# low sub-model numbers under a structure for its own overlays (e.g. residue/atom labels
+# land on "#1.1" the first time something on model #1 is labeled), so reusing that space
+# for our marker sets causes "Cannot create a marker set #1.1 with same model id as
+# another model" and aborts the rest of the command script. Using a reserved top-level
+# range instead avoids colliding with both the receptor model and its auto-created children.
+MARKER_MODEL_BASE = 1000
+
 
 def _get_pbond_params(interaction_type: str, type: Union[str, None] = None) -> Union[PseudobondParamsBase, None]:
     # type must be taken into account for pi-stacking interactions to determine the correct parallel vs perpendicular style
@@ -407,7 +416,7 @@ def create_interaction_commands(row: dict[str, str], marker_counter: int, model_
     coords_tuple = coords.split(",")
     coords_tuple = (float(coords_tuple[0]), float(coords_tuple[1]), float(coords_tuple[2]))
     marker_key = get_marker_type_from_row(row, entity_type="ligand")
-    chimerax_command += create_marker(marker_key, f"#{model_idces[0]}.{model_idces[1]}", coords_tuple)
+    chimerax_command += create_marker(marker_key, f"#{model_idces[1]}", coords_tuple)
     marker_counter += 1
 
     # create receptor marker
@@ -419,7 +428,7 @@ def create_interaction_commands(row: dict[str, str], marker_counter: int, model_
     coords_tuple = coords.split(",")
     coords_tuple = (float(coords_tuple[0]), float(coords_tuple[1]), float(coords_tuple[2]))
     marker_key = get_marker_type_from_row(row, entity_type="receptor")
-    chimerax_command += create_marker(marker_key, f"#{model_idces[0]}.{model_idces[1]}", coords_tuple)
+    chimerax_command += create_marker(marker_key, f"#{model_idces[1]}", coords_tuple)
     marker_counter += 1
 
     if "water_bridge" in interaction_type:
@@ -431,7 +440,7 @@ def create_interaction_commands(row: dict[str, str], marker_counter: int, model_
             raise ValueError("Row must contain 'watercoo' key with coordinates for water_bridge interactions")
         water_coords = _parse_xyz(watercoo, "watercoo")
         marker_key = get_marker_type_from_row(row, entity_type="water")
-        chimerax_command += create_marker(marker_key, f"#{model_idces[0]}.{model_idces[1]}", water_coords)
+        chimerax_command += create_marker(marker_key, f"#{model_idces[1]}", water_coords)
         marker_counter += 1
 
     # create pseudo-bond command between the two markers
@@ -442,18 +451,14 @@ def create_interaction_commands(row: dict[str, str], marker_counter: int, model_
     if pbond_params is None:
         raise ValueError(f"No PBOND parameters found for interaction type: {interaction_type}")
 
-    chimerax_command += (
-        f"pbond #{model_idces[0]}.{model_idces[1]}:{marker_counter - 1} #{model_idces[0]}.{model_idces[1]}:{marker_counter} "
-    )
+    chimerax_command += f"pbond #{model_idces[1]}:{marker_counter - 1} #{model_idces[1]}:{marker_counter} "
     chimerax_command += f"color {pbond_params.color} radius {pbond_params.radius} dashes {pbond_params.dashes} name {interaction_type}\n"
 
     if "water_bridge" in interaction_type:
         # The generic pbond above already connects receptor-water (the last two
         # markers created). Add the missing ligand-water leg here so the bridge
         # is ligand<->water<->receptor instead of a direct ligand-receptor bond.
-        chimerax_command += (
-            f"pbond #{model_idces[0]}.{model_idces[1]}:{marker_counter - 2} #{model_idces[0]}.{model_idces[1]}:{marker_counter} "
-        )
+        chimerax_command += f"pbond #{model_idces[1]}:{marker_counter - 2} #{model_idces[1]}:{marker_counter} "
         chimerax_command += (
             f"color {pbond_params.color} radius {pbond_params.radius} dashes {pbond_params.dashes} name {interaction_type}\n"
         )
@@ -476,7 +481,9 @@ def create_cxc_header(config_params: dict) -> str:
 
     # open
     header += f"open {config_params['pdb']}\n"
-    header += f"close #{config_params['model_id']}.1-100\n"  # in case there is some sub models in the pdb, clear all 100 first models to avoid collision with markers models
+    header += f"close #{config_params['model_id']}.1-100\n"  # in case there is some sub models in the pdb (e.g. NMR ensembles)
+    # Clear any marker sets left over from a previous run of this script in the same session.
+    header += f"close #{MARKER_MODEL_BASE}-{MARKER_MODEL_BASE + 99}\n"
 
     header += f"hide #{config_params['model_id']} target ac\n"
     header += f"show #{config_params['model_id']}/{config_params['receptor_chain']} target c\n"
@@ -528,7 +535,7 @@ def write_cxc_file(
     with output_cxc.open("w", encoding="UTF-8") as file:
         file.write(create_cxc_header(parser_config))
         for i, csv_path in enumerate(csv_list):
-            models_idces = (parser_config["model_id"], i + 1)
+            models_idces = (parser_config["model_id"], MARKER_MODEL_BASE + i)
             markercounter = 0
             isfirst = True
             with csv_path.open("r", encoding="UTF-8") as csvfile:
@@ -541,5 +548,5 @@ def write_cxc_file(
                     )
                     file.write(cmd)
                     if isfirst:
-                        file.write(f"rename #{models_idces[0]}.{models_idces[1]} {csv_path.stem}\n")
+                        file.write(f"rename #{models_idces[1]} {csv_path.stem}\n")
                         isfirst = False
