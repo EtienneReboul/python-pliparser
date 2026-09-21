@@ -43,17 +43,54 @@ class TestGetArguments:
 
     def test_get_arguments_csv2cxc_with_json_only(self):
         """Test parsing csv2cxc with JSON config does not require explicit options."""
-        test_args = ["csv2cxc", "--input", "csv_dir", "--output", "out.cxc", "--config", "cfg.json"]
+        test_args = ["csv2cxc", "--output", "out.cxc", "--config", "cfg.json"]
         with patch.object(sys, "argv", ["prog", *test_args]):
             args = get_arguments()
             assert args.subcommand == "csv2cxc"
-            assert args.input == "csv_dir"
+            assert args.input is None
             assert args.output == "out.cxc"
             assert args.config == "cfg.json"
 
     def test_get_arguments_csv2cxc_requires_explicit_options_without_json(self):
         """Test csv2cxc errors when neither config JSON nor full explicit options are provided."""
         test_args = ["csv2cxc", "--input", "csv_dir", "--output", "out.cxc"]
+        with patch.object(sys, "argv", ["prog", *test_args]):
+            with pytest.raises(SystemExit):
+                get_arguments()
+
+    def test_get_arguments_csv2cxc_rejects_input_with_config(self):
+        """Test csv2cxc errors when --input is combined with --config."""
+        test_args = ["csv2cxc", "--input", "csv_dir", "--output", "out.cxc", "--config", "cfg.json"]
+        with patch.object(sys, "argv", ["prog", *test_args]):
+            with pytest.raises(SystemExit):
+                get_arguments()
+
+    def test_get_arguments_csv2cxc_rejects_flat_flags_with_config(self):
+        """Test csv2cxc errors when a single-source-only flag is combined with --config."""
+        test_args = ["csv2cxc", "--output", "out.cxc", "--config", "cfg.json", "--pdb", "protein.pdb"]
+        with patch.object(sys, "argv", ["prog", *test_args]):
+            with pytest.raises(SystemExit):
+                get_arguments()
+
+    def test_get_arguments_csv2cxc_requires_partner_color_unless_small_molecule(self):
+        """Test --partner-color is required unless --partner-small-molecule is set."""
+        test_args = [
+            "csv2cxc",
+            "--input",
+            "csv_dir",
+            "--output",
+            "out.cxc",
+            "--pdb",
+            "protein.pdb",
+            "--model-id",
+            "1",
+            "--primary-chain",
+            "A",
+            "--primary-color",
+            "gray",
+            "--partner-chain",
+            "B",
+        ]
         with patch.object(sys, "argv", ["prog", *test_args]):
             with pytest.raises(SystemExit):
                 get_arguments()
@@ -70,17 +107,17 @@ class TestGetArguments:
             "protein.pdb",
             "--model-id",
             "1",
-            "--receptor-chain",
+            "--primary-chain",
             "A",
-            "--ligand-chain",
-            "B",
-            "--transparency",
-            "65",
-            "--receptor-color",
+            "--primary-color",
             "gray",
-            "--ligand-color",
+            "--primary-transparency",
+            "65",
+            "--partner-chain",
+            "B",
+            "--partner-color",
             "green",
-            "--issmalmol",
+            "--partner-small-molecule",
         ]
         with patch.object(sys, "argv", ["prog", *test_args]):
             args = get_arguments()
@@ -88,15 +125,37 @@ class TestGetArguments:
             assert args.config is None
             assert args.pdb == "protein.pdb"
             assert args.model_id == 1
-            assert args.issmalmol is True
+            assert args.partner_small_molecule is True
             assert args.label_residues is None
+
+    def test_get_arguments_csv2cxc_small_molecule_without_partner_color(self):
+        """Test --partner-color is not required when --partner-small-molecule is set."""
+        test_args = [
+            "csv2cxc",
+            "--input",
+            "csv_dir",
+            "--output",
+            "out.cxc",
+            "--pdb",
+            "protein.pdb",
+            "--model-id",
+            "1",
+            "--primary-chain",
+            "A",
+            "--primary-color",
+            "gray",
+            "--partner-chain",
+            "B",
+            "--partner-small-molecule",
+        ]
+        with patch.object(sys, "argv", ["prog", *test_args]):
+            args = get_arguments()
+            assert args.partner_color is None
 
     def test_get_arguments_csv2cxc_with_label_residues_flag(self):
         """Test parsing csv2cxc with --label-residues enabled."""
         test_args = [
             "csv2cxc",
-            "--input",
-            "csv_dir",
             "--output",
             "out.cxc",
             "--config",
@@ -122,11 +181,11 @@ class TestRun:
     @patch("pliparser.cli.run_csv2cxc_with_config")
     def test_run_csv2cxc_subcommand_with_json(self, mock_run_csv2cxc_with_config):
         """Test run function with csv2cxc subcommand using JSON config."""
-        test_args = ["csv2cxc", "--input", "csv_dir", "--output", "out.cxc", "--config", "cfg.json"]
+        test_args = ["csv2cxc", "--output", "out.cxc", "--config", "cfg.json"]
         with patch.object(sys, "argv", ["prog", *test_args]):
             run()
             mock_run_csv2cxc_with_config.assert_called_once_with(
-                "csv_dir", "out.cxc", config=None, config_path="cfg.json", interaction_types=None, label_residues=None
+                "out.cxc", config=None, config_path="cfg.json", interaction_types=None, label_residues=None
             )
 
     @patch("pliparser.cli.run_csv2cxc_with_config")
@@ -139,8 +198,6 @@ class TestRun:
         """
         test_args = [
             "csv2cxc",
-            "--input",
-            "csv_dir",
             "--output",
             "out.cxc",
             "--config",
@@ -150,7 +207,7 @@ class TestRun:
         with patch.object(sys, "argv", ["prog", *test_args]):
             run()
             mock_run_csv2cxc_with_config.assert_called_once_with(
-                "csv_dir", "out.cxc", config=None, config_path="cfg.json", interaction_types=None, label_residues=True
+                "out.cxc", config=None, config_path="cfg.json", interaction_types=None, label_residues=True
             )
 
     @patch("pliparser.cli.run_csv2cxc_with_config")
@@ -166,34 +223,34 @@ class TestRun:
             "protein.pdb",
             "--model-id",
             "1",
-            "--receptor-chain",
+            "--primary-chain",
             "A",
-            "--ligand-chain",
-            "B",
-            "--transparency",
-            "65",
-            "--receptor-color",
+            "--primary-color",
             "gray",
-            "--ligand-color",
+            "--primary-transparency",
+            "65",
+            "--partner-chain",
+            "B",
+            "--partner-color",
             "green",
-            "--issmalmol",
+            "--partner-small-molecule",
         ]
         with patch.object(sys, "argv", ["prog", *test_args]):
             run()
             mock_run_csv2cxc_with_config.assert_called_once()
             args, kwargs = mock_run_csv2cxc_with_config.call_args
-            assert args == ("csv_dir", "out.cxc")
+            assert args == ("out.cxc",)
             assert kwargs["config_path"] is None
             assert kwargs["config"] == {
                 "pdb": "protein.pdb",
                 "model_id": 1,
-                "receptor_chain": "A",
-                "ligand_chain": "B",
-                "transparency": 65,
-                "issmalmol": True,
-                "receptor_color": "gray",
-                "ligand_color": "green",
-                "label_residues": False,
+                "chains": [
+                    {"chain": "A", "color": "gray", "transparency": 65, "show": True},
+                    {"chain": "B", "color": "green", "transparency": 0, "show": True, "small_molecule": True},
+                ],
+                "sources": [
+                    {"name": "source", "input": "csv_dir", "issmalmol": True, "label_residues": False},
+                ],
             }
 
     @patch("pliparser.cli.run_csv2cxc_with_config")
@@ -209,31 +266,26 @@ class TestRun:
             "protein.pdb",
             "--model-id",
             "1",
-            "--receptor-chain",
+            "--primary-chain",
             "A",
-            "--ligand-chain",
-            "B",
-            "--transparency",
-            "65",
-            "--receptor-color",
+            "--primary-color",
             "gray",
-            "--ligand-color",
+            "--partner-chain",
+            "B",
+            "--partner-color",
             "green",
-            "--issmalmol",
             "--label-residues",
         ]
         with patch.object(sys, "argv", ["prog", *test_args]):
             run()
             _, kwargs = mock_run_csv2cxc_with_config.call_args
-            assert kwargs["config"]["label_residues"] is True
+            assert kwargs["config"]["sources"][0]["label_residues"] is True
 
     @patch("pliparser.cli.run_csv2cxc_with_config")
     def test_run_csv2cxc_with_interaction_types_filter(self, mock_run_csv2cxc_with_config):
         """Test that --interaction-types is parsed and forwarded as a set."""
         test_args = [
             "csv2cxc",
-            "--input",
-            "csv_dir",
             "--output",
             "out.cxc",
             "--config",

@@ -39,23 +39,30 @@ def get_arguments(args=None):
     )
 
     csv2cxc_parser = subparsers.add_parser("csv2cxc", help="Convert PLIP CSV interactions to ChimeraX CXC.")
-    csv2cxc_parser.add_argument("--input", required=True, help="Directory containing interaction CSV files.")
+    csv2cxc_parser.add_argument(
+        "--input",
+        help="Directory containing interaction CSV files for a single source. "
+        "Cannot be combined with --config; in JSON-config mode every source's input "
+        "directory comes from the config's 'sources' list instead.",
+    )
     csv2cxc_parser.add_argument("--output", required=True, help="Path to output CXC file.")
     csv2cxc_parser.add_argument("--config", help="Path to JSON config file.")
 
-    # These options are required only when --config is not provided.
+    # These options are single-source-only: they are required when --config is not
+    # provided, and rejected when it is.
     csv2cxc_parser.add_argument("--pdb", help="PDB path or identifier to open in ChimeraX.")
     csv2cxc_parser.add_argument("--model-id", type=int, help="ChimeraX model id.")
-    csv2cxc_parser.add_argument("--receptor-chain", help="Receptor chain id.")
-    csv2cxc_parser.add_argument("--ligand-chain", help="Ligand chain id.")
-    csv2cxc_parser.add_argument("--transparency", type=int, help="Receptor transparency value.")
-    csv2cxc_parser.add_argument("--receptor-color", help="Receptor color.")
-    csv2cxc_parser.add_argument("--ligand-color", help="Ligand color.")
+    csv2cxc_parser.add_argument("--primary-chain", help="Primary chain id (e.g. the structure's main receiving chain).")
+    csv2cxc_parser.add_argument("--primary-color", help="Primary chain color.")
+    csv2cxc_parser.add_argument("--primary-transparency", type=int, default=None, help="Primary chain transparency value.")
+    csv2cxc_parser.add_argument("--partner-chain", help="Partner chain id (the other side of the interaction).")
+    csv2cxc_parser.add_argument("--partner-color", help="Partner chain color. Required unless --partner-small-molecule is set.")
+    csv2cxc_parser.add_argument("--partner-transparency", type=int, default=None, help="Partner chain transparency value.")
     csv2cxc_parser.add_argument(
-        "--issmalmol",
+        "--partner-small-molecule",
         action=argparse.BooleanOptionalAction,
         default=None,
-        help="Whether ligand is treated as a small molecule.",
+        help="Whether the partner chain is treated as a small molecule.",
     )
     csv2cxc_parser.add_argument(
         "--interaction-types",
@@ -74,22 +81,39 @@ def get_arguments(args=None):
 
     parsed_args = parser.parse_args(args=args)
 
-    if parsed_args.subcommand == "csv2cxc" and parsed_args.config is None:
-        required_if_no_json = [
+    if parsed_args.subcommand == "csv2cxc":
+        flat_only_flags = [
             "pdb",
             "model_id",
-            "receptor_chain",
-            "ligand_chain",
-            "transparency",
-            "receptor_color",
-            "ligand_color",
-            "issmalmol",
+            "primary_chain",
+            "primary_color",
+            "primary_transparency",
+            "partner_chain",
+            "partner_color",
+            "partner_transparency",
+            "partner_small_molecule",
         ]
-        missing = [name for name in required_if_no_json if getattr(parsed_args, name) is None]
-        if missing:
-            parser.error(
-                "csv2cxc requires --config or all explicit options: " + ", ".join(f"--{name.replace('_', '-')}" for name in missing)
-            )
+        if parsed_args.config is not None:
+            if parsed_args.input is not None:
+                parser.error(
+                    "csv2cxc: --input cannot be combined with --config; put each source's "
+                    "'input' path inside the JSON config's 'sources' list instead."
+                )
+            set_flat_flags = [name for name in flat_only_flags if getattr(parsed_args, name) is not None]
+            if set_flat_flags:
+                parser.error(
+                    "csv2cxc: these flags are single-source-only and cannot be combined with --config: "
+                    + ", ".join(f"--{name.replace('_', '-')}" for name in set_flat_flags)
+                )
+        else:
+            required_if_no_json = ["input", "pdb", "model_id", "primary_chain", "primary_color", "partner_chain"]
+            missing = [name for name in required_if_no_json if getattr(parsed_args, name) is None]
+            if not parsed_args.partner_small_molecule and parsed_args.partner_color is None:
+                missing.append("partner_color")
+            if missing:
+                parser.error(
+                    "csv2cxc requires --config or all explicit options: " + ", ".join(f"--{name.replace('_', '-')}" for name in missing)
+                )
 
     return parsed_args
 
@@ -107,18 +131,33 @@ def run(args=None):
             config = {
                 "pdb": args.pdb,
                 "model_id": args.model_id,
-                "receptor_chain": args.receptor_chain,
-                "ligand_chain": args.ligand_chain,
-                "transparency": args.transparency,
-                "issmalmol": args.issmalmol,
-                "receptor_color": args.receptor_color,
-                "ligand_color": args.ligand_color,
-                "label_residues": bool(args.label_residues),
+                "chains": [
+                    {
+                        "chain": args.primary_chain,
+                        "color": args.primary_color,
+                        "transparency": args.primary_transparency or 0,
+                        "show": True,
+                    },
+                    {
+                        "chain": args.partner_chain,
+                        "color": args.partner_color,
+                        "transparency": args.partner_transparency or 0,
+                        "show": True,
+                        "small_molecule": bool(args.partner_small_molecule),
+                    },
+                ],
+                "sources": [
+                    {
+                        "name": "source",
+                        "input": args.input,
+                        "issmalmol": bool(args.partner_small_molecule),
+                        "label_residues": bool(args.label_residues),
+                    }
+                ],
             }
 
         interaction_types = set(args.interaction_types) if args.interaction_types else None
         run_csv2cxc_with_config(
-            args.input,
             args.output,
             config=config,
             config_path=args.config,

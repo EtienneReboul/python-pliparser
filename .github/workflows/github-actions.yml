@@ -241,108 +241,111 @@ jobs:
       matrix:
         # One matrix entry per structure from PLIP's own test suite
         # (https://github.com/pharmai/plip/tree/master/plip/test/pdb), curated so that every
-        # PLIP interaction type and every receptor/ligand molecule combination (small-molecule
-        # ligand, DNA ligand, RNA-only receptor, peptide ligand, NMR ensemble) is exercised at
-        # least once. expect_type is the PLIP interaction_type string (matches the CSV filename
-        # produced by plip2csv and the `name` field written by csv2cxc) that this structure is
-        # known to contain; leave it empty to skip the type-presence assertions.
+        # PLIP interaction type and every primary/partner molecule combination (small-molecule
+        # partner, DNA partner, RNA-only primary chain, peptide partner, NMR ensemble) is
+        # exercised at least once. primary_chain/partner_chain are csv2cxc's two chain groups
+        # for this single-source run (see docs/usage.rst); they say nothing about which side
+        # PLIP itself called "receptor" vs "ligand". expect_type is the PLIP interaction_type
+        # string (matches the CSV filename produced by plip2csv and the `name` field written by
+        # csv2cxc) that this structure is known to contain; leave it empty to skip the
+        # type-presence assertions.
         include:
           - pdb: '1acj'
             label: 'pi-stacking'
             expect_type: 'pi-stacking'
-            receptor_chain: 'A'
-            ligand_chain: 'A'
+            primary_chain: 'A'
+            partner_chain: 'A'
             issmalmol: true
             plip_flags: ''
           - pdb: '1p5e'
             label: 'halogen bond'
             expect_type: 'halogen_bonds'
-            receptor_chain: 'A'
-            ligand_chain: 'A'
+            primary_chain: 'A'
+            partner_chain: 'A'
             issmalmol: true
             plip_flags: ''
           - pdb: '3og7'
             label: 'hydrogen bond'
             expect_type: 'hydrogen_bonds'
-            receptor_chain: 'A'
-            ligand_chain: 'A'
+            primary_chain: 'A'
+            partner_chain: 'A'
             issmalmol: true
             plip_flags: ''
           - pdb: '3ems'
             label: 'water bridge'
             expect_type: 'water_bridges'
-            receptor_chain: 'A'
-            ligand_chain: 'A'
+            primary_chain: 'A'
+            partner_chain: 'A'
             issmalmol: true
             plip_flags: ''
           - pdb: '1rmd'
             label: 'metal complex (zinc)'
             expect_type: 'metal_complexes'
-            receptor_chain: 'A'
-            ligand_chain: 'A'
+            primary_chain: 'A'
+            partner_chain: 'A'
             issmalmol: true
             plip_flags: ''
           - pdb: '2pvb'
             label: 'metal complex (calcium)'
             expect_type: 'metal_complexes'
-            receptor_chain: 'A'
-            ligand_chain: 'A'
+            primary_chain: 'A'
+            partner_chain: 'A'
             issmalmol: true
             plip_flags: ''
           - pdb: '6nhb'
             label: 'pi-cation'
             expect_type: 'pi-cation_interactions'
-            receptor_chain: 'A'
-            ligand_chain: 'A'
+            primary_chain: 'A'
+            partner_chain: 'A'
             issmalmol: true
             plip_flags: ''
           - pdb: '2reg'
             label: 'salt bridge + pi-cation'
             expect_type: 'salt_bridges'
-            receptor_chain: 'A'
-            ligand_chain: 'A'
+            primary_chain: 'A'
+            partner_chain: 'A'
             issmalmol: true
             plip_flags: ''
           - pdb: '3r0t'
             label: 'hydrophobic (comprehensive)'
             expect_type: 'hydrophobic_interactions'
-            receptor_chain: 'A'
-            ligand_chain: 'A'
+            primary_chain: 'A'
+            partner_chain: 'A'
             issmalmol: true
             plip_flags: ''
           - pdb: '1tf6'
             label: 'protein receptor, DNA ligand'
             expect_type: 'hydrogen_bonds'
-            receptor_chain: 'A'
-            ligand_chain: 'B,C'
+            primary_chain: 'A'
+            partner_chain: 'B,C'
             issmalmol: false
             plip_flags: ''
           - pdb: '4yb0'
             label: 'RNA-only receptor'
             expect_type: 'salt_bridges'
-            receptor_chain: 'R'
-            ligand_chain: 'R'
+            primary_chain: 'R'
+            partner_chain: 'R'
             issmalmol: true
             plip_flags: '--dnareceptor'
           - pdb: '4day'
             label: 'protein receptor, peptide ligand'
             expect_type: 'hydrogen_bonds'
-            receptor_chain: 'A,B'
-            ligand_chain: 'C'
+            primary_chain: 'A,B'
+            partner_chain: 'C'
             issmalmol: false
             plip_flags: '--peptides C'
           - pdb: '2ndo'
             label: 'NMR ensemble'
             expect_type: ''
-            receptor_chain: 'A'
-            ligand_chain: 'A'
+            primary_chain: 'A'
+            partner_chain: 'A'
             issmalmol: true
             plip_flags: ''
           - pdb: '9kbz'
             label: 'RNA receptor, protein ligand (explicit --chains)'
             expect_type: ''
-            receptor_chain: 'C,D'
-            ligand_chain: 'A,B'
+            primary_chain: 'C,D'
+            partner_chain: 'A,B'
             issmalmol: false
             plip_flags: '--dnareceptor --chains "[[''C'',''D''], [''A'',''B'']]"'
     steps:
@@ -391,49 +394,48 @@ jobs:
     - name: "csv2cxc via JSON config"
       run: |
         mkdir -p integration-data/cxc
-        LIGAND_COLOR="green"
+        PARTNER_COLOR="green"
         if [ "${{ matrix.issmalmol }}" = "false" ]; then
-          LIGAND_COLOR="cornflowerblue"
+          PARTNER_COLOR="cornflowerblue"
         fi
         cat > "integration-data/cxc/csv2cxc-config-${{ matrix.pdb }}.json" <<JSON
         {
           "pdb": "${{ matrix.pdb }}",
           "model_id": 1,
-          "receptor_chain": "${{ matrix.receptor_chain }}",
-          "ligand_chain": "${{ matrix.ligand_chain }}",
-          "transparency": 65,
-          "issmalmol": ${{ matrix.issmalmol }},
-          "receptor_color": "gray",
-          "ligand_color": "$LIGAND_COLOR"
+          "chains": [
+            {"chain": "${{ matrix.primary_chain }}", "color": "gray", "transparency": 65},
+            {"chain": "${{ matrix.partner_chain }}", "color": "$PARTNER_COLOR", "small_molecule": ${{ matrix.issmalmol }}}
+          ],
+          "sources": [
+            {"name": "main", "input": "${GITHUB_WORKSPACE}/integration-data/csv/${{ matrix.pdb }}", "issmalmol": ${{ matrix.issmalmol }}}
+          ]
         }
         JSON
         pliparser csv2cxc \
-          --input "integration-data/csv/${{ matrix.pdb }}" \
           --output "integration-data/cxc/${{ matrix.pdb }}.cxc" \
           --config "integration-data/cxc/csv2cxc-config-${{ matrix.pdb }}.json"
     - name: "csv2cxc via explicit CLI flags (no --config)"
       run: |
-        LIGAND_COLOR="green"
-        ISSMALMOL_FLAG="--issmalmol"
+        PARTNER_COLOR="green"
+        SMALMOL_FLAG="--partner-small-molecule"
         if [ "${{ matrix.issmalmol }}" = "false" ]; then
-          LIGAND_COLOR="cornflowerblue"
-          ISSMALMOL_FLAG="--no-issmalmol"
+          PARTNER_COLOR="cornflowerblue"
+          SMALMOL_FLAG="--no-partner-small-molecule"
         fi
         pliparser csv2cxc \
           --input "integration-data/csv/${{ matrix.pdb }}" \
           --output "integration-data/cxc/${{ matrix.pdb }}-cliargs.cxc" \
           --pdb "${{ matrix.pdb }}" \
           --model-id 1 \
-          --receptor-chain "${{ matrix.receptor_chain }}" \
-          --ligand-chain "${{ matrix.ligand_chain }}" \
-          --transparency 65 \
-          --receptor-color gray \
-          --ligand-color "$LIGAND_COLOR" \
-          $ISSMALMOL_FLAG
+          --primary-chain "${{ matrix.primary_chain }}" \
+          --primary-color gray \
+          --primary-transparency 65 \
+          --partner-chain "${{ matrix.partner_chain }}" \
+          --partner-color "$PARTNER_COLOR" \
+          $SMALMOL_FLAG
     - name: "csv2cxc with --label-residues"
       run: |
         pliparser csv2cxc \
-          --input "integration-data/csv/${{ matrix.pdb }}" \
           --output "integration-data/cxc/${{ matrix.pdb }}-labeled.cxc" \
           --config "integration-data/cxc/csv2cxc-config-${{ matrix.pdb }}.json" \
           --label-residues
@@ -448,7 +450,6 @@ jobs:
           fi
         done
         pliparser csv2cxc \
-          --input "integration-data/csv/${{ matrix.pdb }}" \
           --output "integration-data/cxc/${{ matrix.pdb }}-filtered.cxc" \
           --config "integration-data/cxc/csv2cxc-config-${{ matrix.pdb }}.json" \
           --interaction-types "${KEEP_TYPES[@]}"
@@ -491,4 +492,97 @@ jobs:
         path: |
           integration-data/raw/${{ matrix.pdb }}
           integration-data/csv/${{ matrix.pdb }}
+          integration-data/cxc
+
+  integration-multi-source-9kbz:
+    # Demonstrates aggregating two independent PLIP runs on the same structure (PDB 9KBZ,
+    # a DCL4-DRB4-dsRNA complex: chain A = DCL4, chain B = DRB4, chains C/D = RNA) into one
+    # .cxc, each chain getting its own explicit color instead of being forced into a single
+    # receptor/ligand pair. Needs two separate `docker run ... plip` invocations with
+    # different --chains groupings feeding one aggregated JSON config, so it doesn't fit the
+    # per-matrix-entry step template above and runs as its own job instead.
+    name: "integration (9kbz multi-source: DCL4-RNA + DCL4-DRB4)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: test
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.13'
+    - name: install package
+      run: |
+        python -m pip install --progress-bar=off -U pip
+        python -m pip install --progress-bar=off .
+    - name: "generate PLIP report (DCL4 vs RNA, --dnareceptor)"
+      run: |
+        mkdir -p integration-data/raw/9kbz-dcl4-rna
+        docker run --rm \
+          -v "${GITHUB_WORKSPACE}/integration-data/raw/9kbz-dcl4-rna:/results" \
+          -w /results \
+          --user "$(id -u):$(id -g)" \
+          pharmai/plip:latest -i 9kbz -t --dnareceptor --chains "[['C','D'], ['A']]"
+    - name: "generate PLIP report (DCL4 vs DRB4, protein-protein)"
+      run: |
+        mkdir -p integration-data/raw/9kbz-dcl4-drb4
+        docker run --rm \
+          -v "${GITHUB_WORKSPACE}/integration-data/raw/9kbz-dcl4-drb4:/results" \
+          -w /results \
+          --user "$(id -u):$(id -g)" \
+          pharmai/plip:latest -i 9kbz -t --chains "[['A'], ['B']]"
+    - name: convert both PLIP reports to csv
+      run: |
+        for RUN in 9kbz-dcl4-rna 9kbz-dcl4-drb4; do
+          mkdir -p "integration-data/csv/${RUN}"
+          REPORT_PATH="$(find "integration-data/raw/${RUN}" -type f -name '*.txt' | head -n 1)"
+          if [ -z "$REPORT_PATH" ]; then
+            echo "No .txt PLIP report found for ${RUN}"
+            find "integration-data/raw/${RUN}" -maxdepth 3 -type f || true
+            exit 1
+          fi
+          pliparser plip2csv --input "$REPORT_PATH" --output "integration-data/csv/${RUN}"
+        done
+    - name: "csv2cxc multi-source aggregation"
+      run: |
+        mkdir -p integration-data/cxc
+        cat > integration-data/cxc/csv2cxc-config-9kbz-multisource.json <<JSON
+        {
+          "pdb": "9kbz",
+          "model_id": 1,
+          "chains": [
+            {"chain": "A",   "color": "gray",          "transparency": 0},
+            {"chain": "B",   "color": "orange",         "transparency": 0},
+            {"chain": "C,D", "color": "cornflowerblue", "transparency": 65}
+          ],
+          "sources": [
+            {"name": "dcl4_rna",  "input": "${GITHUB_WORKSPACE}/integration-data/csv/9kbz-dcl4-rna",  "issmalmol": false},
+            {"name": "dcl4_drb4", "input": "${GITHUB_WORKSPACE}/integration-data/csv/9kbz-dcl4-drb4", "issmalmol": false, "label_residues": true}
+          ]
+        }
+        JSON
+        pliparser csv2cxc \
+          --output integration-data/cxc/9kbz-multisource.cxc \
+          --config integration-data/cxc/csv2cxc-config-9kbz-multisource.json
+    - name: verify multi-source output
+      run: |
+        test -s integration-data/cxc/9kbz-multisource.cxc
+        grep -q "# ChimeraX Command File" integration-data/cxc/9kbz-multisource.cxc
+        grep -q "color #1/A gray" integration-data/cxc/9kbz-multisource.cxc
+        grep -q "color #1/B orange" integration-data/cxc/9kbz-multisource.cxc
+        grep -q "color #1/C,D cornflowerblue" integration-data/cxc/9kbz-multisource.cxc
+        grep -q "^rename #.* dcl4_rna_" integration-data/cxc/9kbz-multisource.cxc
+        grep -q "^rename #.* dcl4_drb4_" integration-data/cxc/9kbz-multisource.cxc
+        grep -q 'label #' integration-data/cxc/9kbz-multisource.cxc
+    - name: upload integration artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: integration-9kbz-multisource-data
+        path: |
+          integration-data/raw/9kbz-dcl4-rna
+          integration-data/raw/9kbz-dcl4-drb4
+          integration-data/csv/9kbz-dcl4-rna
+          integration-data/csv/9kbz-dcl4-drb4
           integration-data/cxc

@@ -77,7 +77,7 @@ def test_create_interaction_comment_uses_values() -> None:
         "reschain_lig": "B",
     }
 
-    assert create_interaction_comment(row) == "# interaction between receptor hydrogen_bond: ARG45A and LIG10B\n"
+    assert create_interaction_comment(row) == "# interaction (hydrogen_bond): ARG45A <-> LIG10B\n"
 
 
 def test_create_interaction_comment_has_defaults() -> None:
@@ -337,17 +337,15 @@ def test_create_interaction_commands_uses_metal_coordination_coordinate_fallback
     assert "name metal_complexes" in cmd
 
 
-@pytest.mark.parametrize("issmalmol", [False, True])
-def test_create_cxc_header_contains_expected_sections(issmalmol: bool) -> None:
+@pytest.mark.parametrize("small_molecule", [False, True])
+def test_create_cxc_header_contains_expected_sections(small_molecule: bool) -> None:
     cfg = {
         "pdb": "protein.pdb",
         "model_id": 1,
-        "receptor_chain": "A",
-        "ligand_chain": "B",
-        "transparency": 65,
-        "issmalmol": issmalmol,
-        "receptor_color": "gray",
-        "ligand_color": "green",
+        "chains": [
+            {"chain": "A", "color": "gray", "transparency": 65},
+            {"chain": "B", "color": "green", "small_molecule": small_molecule},
+        ],
     }
 
     header = create_cxc_header(cfg)
@@ -359,42 +357,105 @@ def test_create_cxc_header_contains_expected_sections(issmalmol: bool) -> None:
     assert f"close #{csv2cxc.MARKER_MODEL_BASE}-{csv2cxc.MARKER_MODEL_BASE + 99}\n" in header
     assert "show #1/A target c\n" in header
     assert "transparency #1/A 65 target c \n" in header
+    assert "color #1/A gray\n" in header
     assert "style stick\n" in header
-    if issmalmol:
+    if small_molecule:
         assert "show #1/B & ligand target a\n" in header
-        assert "color #1 & ligand byhetero\n" in header
+        assert "color #1/B & ligand byhetero\n" in header
     else:
         assert "show #1/B target c\n" in header
         assert "color #1/B green\n" in header
 
 
-def test_write_cxc_file_writes_header_and_commands(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    csv_path = tmp_path / "hydrogen_bonds.csv"
+def test_create_cxc_header_supports_more_than_two_chains() -> None:
+    cfg = {
+        "pdb": "9kbz",
+        "model_id": 1,
+        "chains": [
+            {"chain": "A", "color": "gray"},
+            {"chain": "B", "color": "orange"},
+            {"chain": "C,D", "color": "cornflowerblue", "transparency": 65},
+        ],
+    }
+
+    header = create_cxc_header(cfg)
+
+    assert "color #1/A gray\n" in header
+    assert "color #1/B orange\n" in header
+    assert "color #1/C,D cornflowerblue\n" in header
+    assert "transparency #1/C,D 65 target c \n" in header
+
+
+def test_create_cxc_header_skips_hidden_chains() -> None:
+    cfg = {
+        "pdb": "9kbz",
+        "model_id": 1,
+        "chains": [
+            {"chain": "A", "color": "gray"},
+            {"chain": "B", "color": "orange", "show": False},
+        ],
+    }
+
+    header = create_cxc_header(cfg)
+
+    assert "#1/B" not in header
+
+
+def test_create_cxc_header_uses_marker_range_size() -> None:
+    cfg = {"pdb": "9kbz", "model_id": 1, "chains": [{"chain": "A", "color": "gray"}]}
+
+    header = create_cxc_header(cfg, marker_range_size=5)
+
+    assert f"close #{csv2cxc.MARKER_MODEL_BASE}-{csv2cxc.MARKER_MODEL_BASE + 4}\n" in header
+
+
+def test_create_cxc_header_raises_on_empty_chains() -> None:
+    with pytest.raises(ValueError, match="non-empty 'chains'"):
+        create_cxc_header({"pdb": "9kbz", "model_id": 1, "chains": []})
+
+
+def test_create_cxc_header_raises_on_missing_color() -> None:
+    cfg = {"pdb": "9kbz", "model_id": 1, "chains": [{"chain": "A"}]}
+    with pytest.raises(ValueError, match="must include 'color'"):
+        create_cxc_header(cfg)
+
+
+_MIN_CHAINS = [{"chain": "A", "color": "gray"}]
+
+
+def _write_hydrogen_bond_csv(folder: Path, name: str = "hydrogen_bonds.csv") -> Path:
+    csv_path = folder / name
     csv_path.write_text(
         "interaction_type,ligcoo,protcoo,protisdon\nhydrogen_bond,0.0,0.0,0.0,1.0,0.0,0.0,True\n",
         encoding="UTF-8",
     )
+    return csv_path
+
+
+def test_write_cxc_file_writes_header_and_commands(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _write_hydrogen_bond_csv(tmp_path)
     (tmp_path / "summary.csv").write_text("ignored,header\n", encoding="UTF-8")
 
-    def fake_create_header(_: dict) -> str:
+    def fake_create_header(_config: dict, marker_range_size: int = 100) -> str:
         return "# HEADER\n"
 
     def fake_create_commands(row: dict[str, str], marker_counter: int, model_idces: tuple[int, int], config: dict) -> tuple[str, int]:
         assert row["interaction_type"] == "hydrogen_bond"
         assert model_idces == (1, csv2cxc.MARKER_MODEL_BASE)
-        assert config == {"model_id": 1}
+        assert config == {"issmalmol": False, "label_residues": False}
         return f"CMD:{marker_counter}\n", marker_counter + 1
 
     monkeypatch.setattr(csv2cxc, "create_cxc_header", fake_create_header)
     monkeypatch.setattr(csv2cxc, "create_interaction_commands", fake_create_commands)
 
     out = tmp_path / "out.cxc"
-    write_cxc_file(tmp_path, out, parser_config={"model_id": 1})
+    config = {"model_id": 1, "chains": _MIN_CHAINS, "sources": [{"name": "main", "input": str(tmp_path)}]}
+    write_cxc_file(out, config)
 
     content = out.read_text(encoding="UTF-8")
     assert content.startswith("# HEADER\n")
     assert "CMD:0\n" in content
-    assert "rename #1000 hydrogen_bonds\n" in content
+    assert "rename #1000 main_hydrogen_bonds\n" in content
 
 
 def test_write_cxc_file_filters_interaction_types(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -408,7 +469,7 @@ def test_write_cxc_file_filters_interaction_types(tmp_path: Path, monkeypatch: p
 
     seen_types: list[str] = []
 
-    def fake_create_header(_: dict) -> str:
+    def fake_create_header(_config: dict, marker_range_size: int = 100) -> str:
         return "# HEADER\n"
 
     def fake_create_commands(row: dict[str, str], marker_counter: int, model_idces: tuple[int, int], config: dict) -> tuple[str, int]:
@@ -419,7 +480,8 @@ def test_write_cxc_file_filters_interaction_types(tmp_path: Path, monkeypatch: p
     monkeypatch.setattr(csv2cxc, "create_interaction_commands", fake_create_commands)
 
     out = tmp_path / "out.cxc"
-    write_cxc_file(tmp_path, out, parser_config={"model_id": 1}, interaction_types={"hydrogen_bond"})
+    config = {"model_id": 1, "chains": _MIN_CHAINS, "sources": [{"name": "main", "input": str(tmp_path)}]}
+    write_cxc_file(out, config, interaction_types={"hydrogen_bond"})
 
     assert seen_types == ["hydrogen_bond"]
     content = out.read_text(encoding="UTF-8")
@@ -438,7 +500,7 @@ def test_write_cxc_file_with_none_filter_passes_all_rows(tmp_path: Path, monkeyp
 
     seen_types: list[str] = []
 
-    monkeypatch.setattr(csv2cxc, "create_cxc_header", lambda _: "# HEADER\n")
+    monkeypatch.setattr(csv2cxc, "create_cxc_header", lambda _config, marker_range_size=100: "# HEADER\n")
     monkeypatch.setattr(
         csv2cxc,
         "create_interaction_commands",
@@ -446,16 +508,204 @@ def test_write_cxc_file_with_none_filter_passes_all_rows(tmp_path: Path, monkeyp
     )
 
     out = tmp_path / "out.cxc"
-    write_cxc_file(tmp_path, out, parser_config={"model_id": 1}, interaction_types=None)
+    config = {"model_id": 1, "chains": _MIN_CHAINS, "sources": [{"name": "main", "input": str(tmp_path)}]}
+    write_cxc_file(out, config, interaction_types=None)
 
     assert seen_types == ["hydrogen_bond", "hydrophobic_interaction"]
 
 
 def test_write_cxc_file_skips_summary_only(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     (tmp_path / "summary.csv").write_text("ignored\n", encoding="UTF-8")
-    monkeypatch.setattr(csv2cxc, "create_cxc_header", lambda _cfg: "# HEADER\n")
+    monkeypatch.setattr(csv2cxc, "create_cxc_header", lambda _config, marker_range_size=100: "# HEADER\n")
 
     out = tmp_path / "out.cxc"
-    write_cxc_file(tmp_path, out, parser_config={"model_id": 1})
+    config = {"model_id": 1, "chains": _MIN_CHAINS, "sources": [{"name": "main", "input": str(tmp_path)}]}
+    write_cxc_file(out, config)
 
     assert out.read_text(encoding="UTF-8") == "# HEADER\n"
+
+
+def test_write_cxc_file_aggregates_multiple_sources_with_collision_free_marker_ids(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    source_a = tmp_path / "source_a"
+    source_b = tmp_path / "source_b"
+    source_a.mkdir()
+    source_b.mkdir()
+    _write_hydrogen_bond_csv(source_a, "hydrogen_bonds.csv")
+    _write_hydrogen_bond_csv(source_a, "salt_bridges.csv")
+    _write_hydrogen_bond_csv(source_b, "hydrogen_bonds.csv")
+
+    seen_model_ids: list[int] = []
+
+    def fake_create_commands(row: dict[str, str], marker_counter: int, model_idces: tuple[int, int], config: dict) -> tuple[str, int]:
+        seen_model_ids.append(model_idces[1])
+        return "CMD\n", marker_counter + 1
+
+    monkeypatch.setattr(csv2cxc, "create_cxc_header", lambda _config, marker_range_size=100: "# HEADER\n")
+    monkeypatch.setattr(csv2cxc, "create_interaction_commands", fake_create_commands)
+
+    out = tmp_path / "out.cxc"
+    config = {
+        "model_id": 1,
+        "chains": _MIN_CHAINS,
+        "sources": [
+            {"name": "alpha", "input": str(source_a)},
+            {"name": "beta", "input": str(source_b)},
+        ],
+    }
+    write_cxc_file(out, config)
+
+    base = csv2cxc.MARKER_MODEL_BASE
+    assert set(seen_model_ids) == {base, base + 1, base + 2}
+    content = out.read_text(encoding="UTF-8")
+    assert f"rename #{base} alpha_hydrogen_bonds\n" in content
+    assert f"rename #{base + 1} alpha_salt_bridges\n" in content
+    assert f"rename #{base + 2} beta_hydrogen_bonds\n" in content
+
+
+def test_write_cxc_file_per_source_issmalmol_and_label_residues_differ(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    source_a = tmp_path / "source_a"
+    source_b = tmp_path / "source_b"
+    source_a.mkdir()
+    source_b.mkdir()
+    _write_hydrogen_bond_csv(source_a)
+    _write_hydrogen_bond_csv(source_b)
+
+    seen_configs: list[dict] = []
+
+    def fake_create_commands(row: dict[str, str], marker_counter: int, model_idces: tuple[int, int], config: dict) -> tuple[str, int]:
+        seen_configs.append(config)
+        return "CMD\n", marker_counter + 1
+
+    monkeypatch.setattr(csv2cxc, "create_cxc_header", lambda _config, marker_range_size=100: "# HEADER\n")
+    monkeypatch.setattr(csv2cxc, "create_interaction_commands", fake_create_commands)
+
+    out = tmp_path / "out.cxc"
+    config = {
+        "model_id": 1,
+        "chains": _MIN_CHAINS,
+        "sources": [
+            {"name": "alpha", "input": str(source_a), "issmalmol": False, "label_residues": False},
+            {"name": "beta", "input": str(source_b), "issmalmol": True, "label_residues": True},
+        ],
+    }
+    write_cxc_file(out, config)
+
+    assert seen_configs == [
+        {"issmalmol": False, "label_residues": False},
+        {"issmalmol": True, "label_residues": True},
+    ]
+
+
+def test_write_cxc_file_per_source_interaction_types_filter(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    source_a = tmp_path / "source_a"
+    source_b = tmp_path / "source_b"
+    source_a.mkdir()
+    source_b.mkdir()
+    for folder in (source_a, source_b):
+        (folder / "interactions.csv").write_text(
+            "interaction_type,ligcoo,protcoo,protisdon\n"
+            "hydrogen_bond,0.0,0.0,0.0,1.0,0.0,0.0,True\n"
+            "hydrophobic_interaction,0.0,0.0,0.0,1.0,0.0,0.0,\n",
+            encoding="UTF-8",
+        )
+
+    seen_types: list[str] = []
+
+    def fake_create_commands(row: dict[str, str], marker_counter: int, model_idces: tuple[int, int], config: dict) -> tuple[str, int]:
+        seen_types.append(row["interaction_type"])
+        return "CMD\n", marker_counter + 1
+
+    monkeypatch.setattr(csv2cxc, "create_cxc_header", lambda _config, marker_range_size=100: "# HEADER\n")
+    monkeypatch.setattr(csv2cxc, "create_interaction_commands", fake_create_commands)
+
+    out = tmp_path / "out.cxc"
+    config = {
+        "model_id": 1,
+        "chains": _MIN_CHAINS,
+        "sources": [
+            {"name": "alpha", "input": str(source_a), "interaction_types": ["hydrogen_bond"]},
+            {"name": "beta", "input": str(source_b), "interaction_types": ["hydrophobic_interaction"]},
+        ],
+    }
+    write_cxc_file(out, config)
+
+    assert seen_types == ["hydrogen_bond", "hydrophobic_interaction"]
+
+
+def test_write_cxc_file_global_interaction_types_override_all_sources(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    source_a = tmp_path / "source_a"
+    source_a.mkdir()
+    (source_a / "interactions.csv").write_text(
+        "interaction_type,ligcoo,protcoo,protisdon\n"
+        "hydrogen_bond,0.0,0.0,0.0,1.0,0.0,0.0,True\n"
+        "hydrophobic_interaction,0.0,0.0,0.0,1.0,0.0,0.0,\n",
+        encoding="UTF-8",
+    )
+
+    seen_types: list[str] = []
+
+    monkeypatch.setattr(csv2cxc, "create_cxc_header", lambda _config, marker_range_size=100: "# HEADER\n")
+    monkeypatch.setattr(
+        csv2cxc,
+        "create_interaction_commands",
+        lambda row, marker_counter, model_idces, config: seen_types.append(row["interaction_type"]) or ("CMD\n", marker_counter + 1),
+    )
+
+    out = tmp_path / "out.cxc"
+    config = {
+        "model_id": 1,
+        "chains": _MIN_CHAINS,
+        "sources": [{"name": "alpha", "input": str(source_a), "interaction_types": ["hydrogen_bond"]}],
+    }
+    write_cxc_file(out, config, interaction_types={"hydrophobic_interaction"})
+
+    assert seen_types == ["hydrophobic_interaction"]
+
+
+def test_write_cxc_file_global_label_residues_override_all_sources(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    source_a = tmp_path / "source_a"
+    source_a.mkdir()
+    _write_hydrogen_bond_csv(source_a)
+
+    seen_configs: list[dict] = []
+
+    monkeypatch.setattr(csv2cxc, "create_cxc_header", lambda _config, marker_range_size=100: "# HEADER\n")
+    monkeypatch.setattr(
+        csv2cxc,
+        "create_interaction_commands",
+        lambda row, marker_counter, model_idces, config: seen_configs.append(config) or ("CMD\n", marker_counter + 1),
+    )
+
+    out = tmp_path / "out.cxc"
+    config = {
+        "model_id": 1,
+        "chains": _MIN_CHAINS,
+        "sources": [{"name": "alpha", "input": str(source_a), "label_residues": False}],
+    }
+    write_cxc_file(out, config, label_residues_override=True)
+
+    assert seen_configs[0]["label_residues"] is True
+
+
+def test_write_cxc_file_raises_on_missing_sources(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="non-empty 'sources'"):
+        write_cxc_file(tmp_path / "out.cxc", {"model_id": 1, "chains": _MIN_CHAINS})
+
+
+def test_write_cxc_file_raises_on_duplicate_source_names(tmp_path: Path) -> None:
+    config = {
+        "model_id": 1,
+        "chains": _MIN_CHAINS,
+        "sources": [
+            {"name": "dup", "input": str(tmp_path)},
+            {"name": "dup", "input": str(tmp_path)},
+        ],
+    }
+    with pytest.raises(ValueError, match="unique 'name'"):
+        write_cxc_file(tmp_path / "out.cxc", config)
+
+
+def test_write_cxc_file_raises_on_source_missing_input(tmp_path: Path) -> None:
+    config = {"model_id": 1, "chains": _MIN_CHAINS, "sources": [{"name": "alpha"}]}
+    with pytest.raises(ValueError, match="missing 'input'"):
+        write_cxc_file(tmp_path / "out.cxc", config)
