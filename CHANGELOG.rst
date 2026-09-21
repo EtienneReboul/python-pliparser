@@ -2,6 +2,19 @@
 Changelog
 =========
 
+1.0.0 (2026-09-21)
+------------------
+
+* First stable release.
+* **Breaking:** Replaced ``csv2cxc``'s single receptor/ligand chain model with a per-chain, multi-source model. The ``--receptor-chain``, ``--ligand-chain``, ``--receptor-color``, ``--ligand-color``, and ``--transparency`` CLI flags (and their JSON config equivalents ``receptor_chain``, ``ligand_chain``, ``receptor_color``, ``ligand_color``, ``transparency``) are removed with no deprecated aliases.
+* Added a ``chains`` list to the ``csv2cxc`` JSON config, letting each chain (or comma-joined chain group) declare its own color, transparency, and show/hide status independently, instead of being forced into a single binary receptor/ligand split.
+* Added a ``sources`` list to the ``csv2cxc`` JSON config, letting multiple separate PLIP interaction-detection runs on the same structure (e.g. different ``--chains`` groupings, different receptor/ligand framings) be aggregated into a single ``.cxc`` output, each with its own ``issmalmol``, ``label_residues``, and ``interaction_types`` settings.
+* Marker-set model ids are now allocated across the flattened list of all sources' CSV files, and ``rename`` commands are prefixed with each source's ``name`` to disambiguate identical interaction-type filenames across sources (e.g. two sources both producing ``hydrogen_bonds.csv``).
+* Replaced the flat CLI's receptor/ligand flags with neutral ``--primary-chain``/``--primary-color``/``--primary-transparency`` and ``--partner-chain``/``--partner-color``/``--partner-transparency``/``--partner-small-molecule`` flags; the flat CLI still only supports a single source (a single PLIP CSV folder inherently has at most two sides), while multi-source aggregation and arbitrary per-chain styling require ``--config``.
+* ``--input`` is no longer accepted together with ``--config``; in JSON-config mode, every source's input CSV directory comes from the config's ``sources[].input`` field, resolved relative to the config file's own directory when given as a relative path.
+* Removed the legacy ``run_csv2cxc()`` wrapper in favor of ``run_csv2cxc_with_config()``.
+* Added a new CI job aggregating two independent PLIP runs on PDB 9KBZ (DCL4-RNA and DCL4-DRB4 interactions, using the structure's real chain layout: DCL4 = chain A, DRB4 = chain B, RNA = chains C/D) into a single multi-source ``.cxc`` demonstrating explicit per-chain colors for all three entities.
+
 0.1.5 (2026-08-21)
 ------------------
 
